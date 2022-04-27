@@ -1,4 +1,4 @@
-package propofol.tilservice.domain.board.entity;
+package propofol.tilservice.domain.entity;
 
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedBy;
