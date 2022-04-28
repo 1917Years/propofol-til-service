@@ -6,6 +6,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.controller.dto.BoardListResponseDto;
 import propofol.tilservice.api.controller.dto.BoardCreateRequestDto;
 import propofol.tilservice.api.controller.dto.BoardResponseDto;
@@ -34,16 +35,30 @@ public class BoardController {
         return boardListResponseDto;
     }
 
+    @GetMapping("/myBoards")
+    public BoardListResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
+                                                        @Token Long memberId){
+        BoardListResponseDto boardListResponseDto = new BoardListResponseDto();
+        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
+        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        pageBoards.forEach(board -> {
+            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
+        });
+        return boardListResponseDto;
+    }
+
     @PostMapping
-    public String createBoard(@Validated  @RequestBody BoardCreateRequestDto requestDto){
+    public String createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
         return boardService.saveBoard(boardDto);
     }
 
     @PostMapping("/{boardId}")
-    public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto){
+    public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
+                              @Token String memberId){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
-        return boardService.updateBoard(boardId, boardDto);
+        return boardService.updateBoard(boardId, boardDto, memberId);
     }
 
     @GetMapping("/{boardId}")
@@ -63,7 +78,7 @@ public class BoardController {
     }
 
     @DeleteMapping("/{boardId}")
-    public String deleteBoard(@PathVariable Long boardId){
-        return boardService.deleteBoard(boardId);
+    public String deleteBoard(@PathVariable Long boardId, @Token String memberId){
+        return boardService.deleteBoard(boardId, memberId);
     }
 }

@@ -7,23 +7,31 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import propofol.tilservice.api.controller.dto.BoardUpdateRequestDto;
+import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.repository.BoardRepository;
+import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoard;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BoardService {
     private final BoardRepository boardRepository;
+    private final RecommendRepository recommendRepository;
 
     public Page<Board> getPageBoards(Integer pageNumber){
         PageRequest pageRequest =
                 PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
         return boardRepository.findAll(pageRequest);
+    }
+
+    public Page<Board> getPagesByMemberId(Integer pageNumber, Long memberId){
+        PageRequest pageRequest =
+                PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
+        Page<Board> result = boardRepository.findPagesByCreatedBy(pageRequest, String.valueOf(memberId));
+        return result;
     }
 
     public String saveBoard(BoardDto boardDto){
@@ -38,9 +46,11 @@ public class BoardService {
         });
     }
 
-    public String deleteBoard(Long boardId){
-        Board board = getBoard(boardId);
-        boardRepository.delete(board);
+    public String deleteBoard(Long boardId, String memberId){
+        Board findBoard = getBoard(boardId);
+        if(findBoard.getCreatedBy().equals(memberId)) boardRepository.delete(findBoard);
+        else throw new NotMatchMemberException("권한 없음.");
+
         return "ok";
     }
 
@@ -55,9 +65,11 @@ public class BoardService {
     }
 
     @Transactional
-    public String updateBoard(Long boardId, BoardDto boardDto) {
+    public String updateBoard(Long boardId, BoardDto boardDto, String memberId) {
         Board findBoard = getBoard(boardId);
-        findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
+        if(findBoard.getCreatedBy().equals(memberId))
+            findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
+        else throw new NotMatchMemberException("권한 없음.");
         return "ok";
     }
 }
