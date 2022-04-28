@@ -33,6 +33,13 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto NotMatchMemberException(NotMatchMemberException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto badRequestType1Error(HttpMessageNotReadableException e){
         ErrorDto errorDto = createError("잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
         return errorDto;
