@@ -42,7 +42,8 @@ public class BoardController {
 
     @PostMapping("/{boardId}")
     public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto){
-        return boardService.updateBoard(boardId, requestDto);
+        BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
+        return boardService.updateBoard(boardId, boardDto);
     }
 
     @GetMapping("/{boardId}")

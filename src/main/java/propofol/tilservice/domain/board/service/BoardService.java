@@ -55,9 +55,9 @@ public class BoardService {
     }
 
     @Transactional
-    public String updateBoard(Long boardId, BoardUpdateRequestDto requestDto) {
+    public String updateBoard(Long boardId, BoardDto boardDto) {
         Board findBoard = getBoard(boardId);
-        findBoard.updateBoard(requestDto.getTitle(), requestDto.getContent(), requestDto.getOpen());
+        findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
         return "ok";
     }
 }
