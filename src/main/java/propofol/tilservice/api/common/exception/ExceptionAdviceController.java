@@ -26,7 +26,7 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotFoundMemberException(NotFoundBoard e){
+    public ErrorDto NotFoundBoardException(NotFoundBoard e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
