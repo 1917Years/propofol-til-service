@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.common.properties.FileProperties;
-import propofol.tilservice.api.controller.dto.BoardListResponseDto;
-import propofol.tilservice.api.controller.dto.BoardCreateRequestDto;
-import propofol.tilservice.api.controller.dto.BoardResponseDto;
-import propofol.tilservice.api.controller.dto.BoardUpdateRequestDto;
+import propofol.tilservice.api.controller.dto.*;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.service.BoardService;
+import propofol.tilservice.domain.board.service.CommentService;
+import propofol.tilservice.domain.board.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
+import propofol.tilservice.domain.board.service.dto.CommentDto;
 import propofol.tilservice.domain.file.service.ImageService;
 
 import java.io.IOException;
@@ -32,6 +32,7 @@ public class BoardController {
     private final ModelMapper modelMapper;
     private final FileProperties fileProperties;
     private final ImageService fileService;
+    private final CommentService commentService;
 
     @GetMapping
     public BoardListResponseDto getPageBoards(@RequestParam Integer page){
@@ -63,6 +64,28 @@ public class BoardController {
                                   @PathVariable(value = "boardId") Long boardId){
         return recommendService.createRecommend(memberId, boardId);
     }
+
+    /**
+     * 부모 댓글
+     */
+    @PostMapping("/{boardId}/comment")
+    public String createParentComment(@PathVariable(value = "boardId") Long boardId,
+                                @Validated @RequestBody CommentRequestDto requestDto) {
+        CommentDto commentDto = modelMapper.map(requestDto, CommentDto.class);
+        return commentService.saveParentComment(commentDto, boardId);
+    }
+
+    /**
+     * 자식 댓글
+     */
+    @PostMapping("/{boardId}/{parentId}/comment")
+    public String createChildComment(@PathVariable(value = "boardId") Long boardId,
+                                @PathVariable(value="parentId") Long parentId,
+                                @Validated @RequestBody CommentRequestDto requestDto) {
+        CommentDto commentDto = modelMapper.map(requestDto, CommentDto.class);
+        return commentService.saveChildComment(commentDto, boardId, parentId);
+    }
+
 
     /**
      * 파일 없이 게시글 저장
@@ -127,4 +150,5 @@ public class BoardController {
     public String deleteBoard(@PathVariable Long boardId, @Token String memberId){
         return boardService.deleteBoard(boardId, memberId);
     }
+
 }
