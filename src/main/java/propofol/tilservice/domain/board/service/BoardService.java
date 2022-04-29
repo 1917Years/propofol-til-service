@@ -38,8 +38,7 @@ public class BoardService {
         return result;
     }
 
-    public String saveBoard(BoardDto boardDto){
-        Board board = createBoard(boardDto);
+    public String saveBoard(Board board){
         boardRepository.save(board);
         return "ok";
     }
@@ -83,7 +82,7 @@ public class BoardService {
         return "ok";
     }
 
-    private Board createBoard(BoardDto boardDto) {
+    public Board createBoard(BoardDto boardDto) {
         Board board = Board.createBoard()
                 .title(boardDto.getTitle())
                 .content(boardDto.getContent())
