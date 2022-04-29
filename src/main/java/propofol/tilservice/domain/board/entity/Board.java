@@ -39,6 +39,9 @@ public class Board extends BaseEntity {
     @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
     private List<Image> images = new ArrayList<>();
 
+    @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
+    private List<Comment> comments = new ArrayList<>();
+
     public void addImage(Image image){
         images.add(image);
         image.addBoard(this);
