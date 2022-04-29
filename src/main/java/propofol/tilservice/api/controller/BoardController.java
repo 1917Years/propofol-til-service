@@ -17,7 +17,7 @@ import propofol.tilservice.api.controller.dto.BoardUpdateRequestDto;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.service.BoardService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
-import propofol.tilservice.domain.file.service.FileService;
+import propofol.tilservice.domain.file.service.ImageService;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,7 +30,7 @@ public class BoardController {
     private final BoardService boardService;
     private final ModelMapper modelMapper;
     private final FileProperties fileProperties;
-    private final FileService fileService;
+    private final ImageService fileService;
 
     @GetMapping
     public BoardListResponseDto getPageBoards(@RequestParam Integer page){
@@ -63,6 +63,9 @@ public class BoardController {
         return boardService.createRecommend(memberId, boardId);
     }
 
+    /**
+     * 파일 없이 게시글 저장
+     */
     @PostMapping
     public String createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
@@ -71,6 +74,9 @@ public class BoardController {
         return "ok";
     }
 
+    /**
+     * 파일과 함께 게시글 저장
+     */
     @PostMapping("/files")
     @Transactional
     public String createBoardWithFiles(
