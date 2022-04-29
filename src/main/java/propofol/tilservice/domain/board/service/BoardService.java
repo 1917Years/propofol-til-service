@@ -8,22 +8,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
-import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.domain.board.entity.Board;
-import propofol.tilservice.domain.board.entity.Recommend;
 import propofol.tilservice.domain.board.repository.BoardRepository;
-import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
-import propofol.tilservice.domain.exception.NotFoundBoard;
-
-import java.util.List;
+import propofol.tilservice.domain.exception.NotFoundBoardException;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BoardService {
     private final BoardRepository boardRepository;
-    private final RecommendRepository recommendRepository;
+    private final RecommendService recommendService;
 
     public Page<Board> getPageBoards(Integer pageNumber){
         PageRequest pageRequest =
@@ -45,40 +40,15 @@ public class BoardService {
 
     public Board getBoard(Long boardId){
         return boardRepository.findById(boardId).orElseThrow(() -> {
-            throw new NotFoundBoard("게시물을 찾을 수 없습니다.");
+            throw new NotFoundBoardException("게시물을 찾을 수 없습니다.");
         });
     }
 
     public String deleteBoard(Long boardId, String memberId){
         Board findBoard = getBoard(boardId);
+        recommendService.bulkDelete(boardId);
         if(findBoard.getCreatedBy().equals(memberId)) boardRepository.delete(findBoard);
         else throw new NotMatchMemberException("권한 없음.");
-
-        return "ok";
-    }
-
-    @Transactional
-    public String createRecommend(String memberId, Long boardId){
-        Board findBoard = boardRepository.findById(boardId).orElseThrow(() -> {
-            throw new NotFoundBoard("게시글을 찾을 수 없습니다.");
-        });
-
-        if(findBoard.getCreatedBy().equals(memberId)) throw new SameMemberException("같은 사용자입니다.");
-
-        List<Recommend> recommends = findBoard.getRecommends();
-        for (Recommend recommend : recommends) {
-            if (recommend.getMemberId().equals(memberId)){
-                findBoard.setDownRecommend();
-                recommendRepository.delete(recommend);
-                return "cancel";
-            }
-        }
-
-        Recommend recommend = Recommend.createRecommend().memberId(memberId).build();
-        findBoard.addRecommend(recommend);
-        recommendRepository.save(recommend);
-        findBoard.setUpRecommend();
-
         return "ok";
     }
 
