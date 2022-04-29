@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 import propofol.tilservice.domain.entity.BaseEntity;
+import propofol.tilservice.domain.file.entity.Image;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -34,6 +35,14 @@ public class Board extends BaseEntity {
 
     @OneToMany(mappedBy = "board")
     private List<Recommend> recommends = new ArrayList<>();
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
+    private List<Image> images = new ArrayList<>();
+
+    public void addImage(Image image){
+        images.add(image);
+        image.addBoard(this);
+    }
 
     public void addRecommend(Recommend recommend){
         recommend.addBoard(this);
