@@ -11,7 +11,8 @@ import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.tilservice.api.common.exception.dto.ErrorDto;
-import propofol.tilservice.domain.exception.NotFoundBoard;
+import propofol.tilservice.domain.exception.NotFoundBoardException;
+import propofol.tilservice.domain.exception.NotFoundCommentException;
 import propofol.tilservice.domain.exception.NotFoundFileException;
 import propofol.tilservice.domain.exception.NotSaveFileException;
 
@@ -30,7 +31,7 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotFoundBoardException(NotFoundBoard e){
+    public ErrorDto NotFoundBoardException(NotFoundBoardException e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
@@ -59,6 +60,13 @@ public class ExceptionAdviceController {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto NotFoundFileException(NotFoundFileException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto NotFoundCommentException(NotFoundCommentException e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
