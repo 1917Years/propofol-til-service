@@ -1,4 +1,4 @@
-package propofol.tilservice.api.common.exception;
+package propofol.tilservice.api.common.exception.advice;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -7,6 +7,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import propofol.tilservice.api.common.exception.NotMatchMemberException;
+import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.tilservice.api.common.exception.dto.ErrorDto;
 import propofol.tilservice.domain.exception.NotFoundBoard;
@@ -34,6 +36,13 @@ public class ExceptionAdviceController {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto NotMatchMemberException(NotMatchMemberException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto NotMatchMemberException(SameMemberException e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
