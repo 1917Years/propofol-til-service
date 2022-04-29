@@ -4,12 +4,16 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import propofol.tilservice.domain.entity.BaseEntity;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
+@DynamicUpdate
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Board extends BaseEntity {
 
@@ -27,6 +31,22 @@ public class Board extends BaseEntity {
 
     @Column(nullable = false)
     private Boolean open;
+
+    @OneToMany(mappedBy = "board")
+    private List<Recommend> recommends = new ArrayList<>();
+
+    public void addRecommend(Recommend recommend){
+        recommend.addBoard(this);
+        recommends.add(recommend);
+    }
+
+    public void setDownRecommend(){
+        this.recommend = this.recommend - 1;
+    }
+
+    public void setUpRecommend(){
+        this.recommend = this.recommend + 1;
+    }
 
     @Builder(builderMethodName = "createBoard")
     public Board(String title, String content, Integer recommend, Boolean open) {
