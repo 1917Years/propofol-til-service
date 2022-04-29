@@ -12,6 +12,7 @@ import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.tilservice.api.common.exception.dto.ErrorDto;
 import propofol.tilservice.domain.exception.NotFoundBoard;
+import propofol.tilservice.domain.exception.NotSaveFileException;
 
 import javax.validation.ConstraintViolationException;
 
@@ -42,10 +43,18 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotMatchMemberException(SameMemberException e){
+    public ErrorDto NotSameMemberException(SameMemberException e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto NotSaveFileException(NotSaveFileException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
