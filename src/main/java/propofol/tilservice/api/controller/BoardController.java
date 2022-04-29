@@ -28,6 +28,7 @@ import java.util.List;
 @RequestMapping("/api/v1/boards")
 public class BoardController {
     private final BoardService boardService;
+    private final RecommendService recommendService;
     private final ModelMapper modelMapper;
     private final FileProperties fileProperties;
     private final ImageService fileService;
@@ -57,10 +58,10 @@ public class BoardController {
         return boardListResponseDto;
     }
 
-    @PostMapping("/recommend/{boardId}")
+    @PostMapping("/{boardId}/recommend")
     public String createRecommend(@Token String memberId,
                                   @PathVariable(value = "boardId") Long boardId){
-        return boardService.createRecommend(memberId, boardId);
+        return recommendService.createRecommend(memberId, boardId);
     }
 
     /**
