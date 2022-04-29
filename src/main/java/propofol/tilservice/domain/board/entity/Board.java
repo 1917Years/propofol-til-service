@@ -49,6 +49,11 @@ public class Board extends BaseEntity {
         recommends.add(recommend);
     }
 
+    public void addComment(Comment comment) {
+        comment.addBoard(this);
+        comments.add(comment);
+    }
+
     public void setDownRecommend(){
         this.recommend = this.recommend - 1;
     }
