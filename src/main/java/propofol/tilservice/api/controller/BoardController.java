@@ -37,7 +37,7 @@ public class BoardController {
 
     @GetMapping("/myBoards")
     public BoardListResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
-                                                        @Token Long memberId){
+                                                        @Token String memberId){
         BoardListResponseDto boardListResponseDto = new BoardListResponseDto();
         Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
         boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
@@ -46,6 +46,12 @@ public class BoardController {
             boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
         });
         return boardListResponseDto;
+    }
+
+    @PostMapping("/recommend/{boardId}")
+    public String createRecommend(@Token String memberId,
+                                  @PathVariable(value = "boardId") Long boardId){
+        return boardService.createRecommend(memberId, boardId);
     }
 
     @PostMapping

@@ -8,11 +8,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
+import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.domain.board.entity.Board;
+import propofol.tilservice.domain.board.entity.Recommend;
 import propofol.tilservice.domain.board.repository.BoardRepository;
 import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoard;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -27,10 +31,10 @@ public class BoardService {
         return boardRepository.findAll(pageRequest);
     }
 
-    public Page<Board> getPagesByMemberId(Integer pageNumber, Long memberId){
+    public Page<Board> getPagesByMemberId(Integer pageNumber, String memberId){
         PageRequest pageRequest =
                 PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
-        Page<Board> result = boardRepository.findPagesByCreatedBy(pageRequest, String.valueOf(memberId));
+        Page<Board> result = boardRepository.findPagesByCreatedBy(pageRequest, memberId);
         return result;
     }
 
@@ -50,6 +54,31 @@ public class BoardService {
         Board findBoard = getBoard(boardId);
         if(findBoard.getCreatedBy().equals(memberId)) boardRepository.delete(findBoard);
         else throw new NotMatchMemberException("권한 없음.");
+
+        return "ok";
+    }
+
+    @Transactional
+    public String createRecommend(String memberId, Long boardId){
+        Board findBoard = boardRepository.findById(boardId).orElseThrow(() -> {
+            throw new NotFoundBoard("게시글을 찾을 수 없습니다.");
+        });
+
+        if(findBoard.getCreatedBy().equals(memberId)) throw new SameMemberException("같은 사용자입니다.");
+
+        List<Recommend> recommends = findBoard.getRecommends();
+        for (Recommend recommend : recommends) {
+            if (recommend.getMemberId().equals(memberId)){
+                findBoard.setDownRecommend();
+                recommendRepository.delete(recommend);
+                return "cancel";
+            }
+        }
+
+        Recommend recommend = Recommend.createRecommend().memberId(memberId).build();
+        findBoard.addRecommend(recommend);
+        recommendRepository.save(recommend);
+        findBoard.setUpRecommend();
 
         return "ok";
     }
