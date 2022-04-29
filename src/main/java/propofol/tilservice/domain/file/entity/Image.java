@@ -18,8 +18,9 @@ public class Image extends BaseEntity {
     @Column(name="file_id")
     private Long id;
 
-    private String UploadFileName; // 업로드된 파일 이름
-    private String StoreFileName; // 저장 이름
+    private String uploadFileName; // 업로드된 파일 이름
+    private String storeFileName; // 저장 이름
+    private String contentType; // 타입
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", updatable = false)
@@ -30,8 +31,9 @@ public class Image extends BaseEntity {
     }
 
     @Builder(builderMethodName = "createImage")
-    public Image(String uploadFileName, String storeFileName) {
-        UploadFileName = uploadFileName;
-        StoreFileName = storeFileName;
+    public Image(String uploadFileName, String storeFileName, String contentType) {
+        this.uploadFileName = uploadFileName;
+        this.storeFileName = storeFileName;
+        this.contentType = contentType;
     }
 }
