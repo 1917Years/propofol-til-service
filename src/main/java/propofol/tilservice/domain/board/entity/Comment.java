@@ -4,15 +4,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import propofol.tilservice.domain.entity.BaseEntity;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
+@DynamicUpdate
 public class Comment extends BaseEntity {
     @Id @GeneratedValue
     @Column(name = "comment_id")
@@ -21,36 +21,23 @@ public class Comment extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
+//    @Column(nullable = false)
+    private String nickname;
+
+    private Long groupId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="board_id", updatable = false)
     private Board board;
 
-    // 가장 상위 댓글(부모)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="parent_id")
-    private Comment parent;
-
-    // 대댓글 (자식)
-    @OneToMany(mappedBy = "parent")
-    private List<Comment> childList = new ArrayList<>();
-
-    public void setParent(Comment parent) {
-        this.parent = parent;
-    }
-
-    public void addBoard(Board board) {
-        this.board = board;
+    public void addGroupInfo(Long groupId) {
+        this.groupId = groupId;
     }
 
     @Builder(builderMethodName = "createComment")
-    public Comment(String content, Board board) {
+    public Comment(String content, String nickname, Board board) {
         this.content = content;
+        this.nickname = nickname;
         this.board = board;
     }
-
-
-
-
-
-    
 }
