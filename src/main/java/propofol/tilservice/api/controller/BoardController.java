@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import propofol.tilservice.api.common.annotation.Jwt;
 import propofol.tilservice.api.common.annotation.Token;
+import propofol.tilservice.api.common.exception.BoardCreateException;
+import propofol.tilservice.api.common.exception.BoardUpdateException;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.*;
+import propofol.tilservice.api.service.StreakService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.service.BoardService;
@@ -34,6 +37,7 @@ public class BoardController {
     private final FileProperties fileProperties;
     private final ImageService fileService;
     private final CommentService commentService;
+    private final StreakService streakService;
 
     /**
      * 게시글 추천수 처리
@@ -80,10 +84,17 @@ public class BoardController {
      * 파일 없이 게시글 저장
      */
     @PostMapping
-    public String createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto){
+    public String createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto,
+                              @Jwt String token){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
 
-        boardService.saveBoard(boardService.createBoard(boardDto));
+        try {
+            streakService.saveStreak(token);
+            boardService.saveBoard(boardService.createBoard(boardDto));
+        }catch (Exception e){
+            throw new BoardCreateException("게시글 생성 오류!");
+        }
+
         return "ok";
     }
 
@@ -96,7 +107,8 @@ public class BoardController {
             @RequestParam("file") List<MultipartFile> files,
             @RequestParam("title") String title,
             @RequestParam("content") String content,
-            @RequestParam("open") Boolean open
+            @RequestParam("open") Boolean open,
+            @Jwt String token
     ) throws IOException {
 
         BoardDto boardDto = new BoardDto();
@@ -104,10 +116,16 @@ public class BoardController {
         boardDto.setContent(content);
         boardDto.setOpen(open);
 
-        Board board = boardService.createBoard(boardDto);
-        boardService.saveBoard(board);
+        try {
+            streakService.saveStreak(token);
 
-        fileService.saveBoardFile(fileProperties.getBoardDir(), files, board);
+            Board board = boardService.createBoard(boardDto);
+            boardService.saveBoard(board);
+
+            fileService.saveBoardFile(fileProperties.getBoardDir(), files, board);
+        }catch (Exception e){
+            throw new BoardCreateException("게시글 생성 오류!");
+        }
 
         return "ok";
     }
@@ -157,9 +175,17 @@ public class BoardController {
      */
     @PostMapping("/{boardId}")
     public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
-                              @Token String memberId){
+                              @Token String memberId, @Jwt String token){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
-        return boardService.updateBoard(boardId, boardDto, memberId);
+
+        try {
+            streakService.saveStreak(token);
+            boardService.updateBoard(boardId, boardDto, memberId);
+        }catch (Exception e){
+            throw new BoardUpdateException("게시물 수정 오류!");
+        }
+
+        return "ok";
     }
 
     /**
