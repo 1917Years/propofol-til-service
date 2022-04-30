@@ -7,6 +7,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import propofol.tilservice.api.common.exception.BoardCreateException;
+import propofol.tilservice.api.common.exception.BoardUpdateException;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.api.common.exception.dto.ErrorDetailDto;
@@ -32,6 +34,20 @@ public class ExceptionAdviceController {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto NotFoundBoardException(NotFoundBoardException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto BoardUpdateException(BoardUpdateException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto BoardCreateException(BoardCreateException e){
         ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
         return errorDto;
     }
