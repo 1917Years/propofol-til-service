@@ -8,13 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import propofol.tilservice.api.common.annotation.Jwt;
 import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.*;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.service.BoardService;
-import propofol.tilservice.domain.board.service.CommentService;
+import propofol.tilservice.api.service.CommentService;
 import propofol.tilservice.domain.board.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.board.service.dto.CommentDto;
@@ -49,9 +50,9 @@ public class BoardController {
      */
     @PostMapping("/{boardId}/comment")
     public String createParentComment(@PathVariable(value = "boardId") Long boardId,
-                                @Validated @RequestBody CommentRequestDto requestDto) {
-        CommentDto commentDto = modelMapper.map(requestDto, CommentDto.class);
-        return commentService.saveParentComment(commentDto, boardId);
+                                      @Validated @RequestBody CommentRequestDto requestDto,
+                                      @Jwt String token) {
+        return commentService.saveParentComment(requestDto, boardId, token);
     }
 
     /**
@@ -60,9 +61,9 @@ public class BoardController {
     @PostMapping("/{boardId}/{parentId}/comment")
     public String createChildComment(@PathVariable(value = "boardId") Long boardId,
                                 @PathVariable(value="parentId") Long parentId,
-                                @Validated @RequestBody CommentRequestDto requestDto) {
-        CommentDto commentDto = modelMapper.map(requestDto, CommentDto.class);
-        return commentService.saveChildComment(commentDto, boardId, parentId);
+                                @Validated @RequestBody CommentRequestDto requestDto,
+                                     @Jwt String token) {
+        return commentService.saveChildComment(requestDto, boardId, parentId, token);
     }
 
     /**
