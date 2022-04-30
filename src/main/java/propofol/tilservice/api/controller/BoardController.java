@@ -70,6 +70,7 @@ public class BoardController {
     }
 
     /**
+     * 게시글 먼저 받고 이 후 Id로 댓글 받아가기
      * 댓글 정보 제공
      */
     @GetMapping("/{boardId}/comments")
@@ -146,22 +147,6 @@ public class BoardController {
     }
 
     /**
-     * 사용자 자신의 게시글 제공
-     */
-    @GetMapping("/myBoards")
-    public BoardPageResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
-                                                        @Token String memberId){
-        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
-        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
-        pageBoards.forEach(board -> {
-            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
-        });
-        return boardListResponseDto;
-    }
-
-    /**
      * 게시글 정보 제공
      **/
     @GetMapping("/{boardId}")
@@ -196,6 +181,35 @@ public class BoardController {
         return boardService.deleteBoard(boardId, memberId);
     }
 
+    /**
+     * 게시글 제목 검색
+     */
+    @GetMapping("/search/title/{keyword}")
+    public BoardPageResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
+                                                 @RequestParam(value = "page") Integer page){
+        Page<Board> boards = boardService.getPageByTitleKeyword(keyword, page);
+        return getBoardPageResponseDto(boards);
+    }
+
+
+    /**
+     * 사용자 자신의 게시글 제공
+     * 검색 기능으로 사용해도 됨
+     */
+    @GetMapping("/myBoards")
+    public BoardPageResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
+                                                        @Token String memberId){
+        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
+        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
+        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        pageBoards.forEach(board -> {
+            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
+        });
+        return boardListResponseDto;
+    }
+
+
     private BoardResponseDto createBoardResponse(Board board) {
         BoardResponseDto boardResponseDto = new BoardResponseDto();
         boardResponseDto.setId(board.getId());
@@ -217,6 +231,18 @@ public class BoardController {
         });
 
         return commentPageResponseDto;
+    }
+
+    private BoardPageResponseDto getBoardPageResponseDto(Page<Board> boards) {
+        BoardPageResponseDto boardPageResponseDto = new BoardPageResponseDto();
+        boardPageResponseDto.setTotalPageCount(boards.getTotalPages());
+        boardPageResponseDto.setTotalCount(boards.getTotalElements());
+        List<BoardResponseDto> responseDtoBoards = boardPageResponseDto.getBoards();
+        boards.getContent().forEach(board -> {
+            responseDtoBoards.add(new BoardResponseDto(board.getId(), board.getTitle(), board.getContent(),
+                    board.getRecommend(), board.getOpen()));
+        });
+        return boardPageResponseDto;
     }
 
 }

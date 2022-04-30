@@ -29,12 +29,26 @@ public class BoardService {
     private final RecommendRepository recommendRepository;
     private final ImageService imageService;
 
+    /**
+     *  게시글 전체 페이지 조회
+     */
     public Page<Board> getPageBoards(Integer pageNumber){
         PageRequest pageRequest =
                 PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
         return boardRepository.findAll(pageRequest);
     }
 
+    /**
+     * 제목 검색
+     */
+    public Page<Board> getPageByTitleKeyword(String keyword, int page){
+        PageRequest pageRequest = PageRequest.of(page - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
+        return boardRepository.findPageByTitleKeyword(keyword, pageRequest);
+    }
+
+    /**
+     * 회원 Id를 사용한 게시글 페이지 조회
+     */
     public Page<Board> getPagesByMemberId(Integer pageNumber, String memberId){
         PageRequest pageRequest =
                 PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
@@ -42,17 +56,26 @@ public class BoardService {
         return result;
     }
 
+    /**
+     * 게시글 저장
+     */
     public String saveBoard(Board board){
         boardRepository.save(board);
         return "ok";
     }
 
+    /**
+     * 게시글 아이디 조회
+     */
     public Board getBoard(Long boardId){
         return boardRepository.findById(boardId).orElseThrow(() -> {
             throw new NotFoundBoardException("게시물을 찾을 수 없습니다.");
         });
     }
 
+    /**
+     * 게시글 삭제
+     */
     @Transactional
     public String deleteBoard(Long boardId, String memberId){
         Board findBoard = getBoard(boardId);
@@ -80,6 +103,9 @@ public class BoardService {
         return "ok";
     }
 
+    /**
+     * Board Entity 생성
+     */
     public Board createBoard(BoardDto boardDto) {
         Board board = Board.createBoard()
                 .title(boardDto.getTitle())
@@ -90,6 +116,9 @@ public class BoardService {
         return board;
     }
 
+    /**
+     * 게시글 수정
+     */
     @Transactional
     public String updateBoard(Long boardId, BoardDto boardDto, String memberId) {
         Board findBoard = getBoard(boardId);

@@ -16,4 +16,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     @Query(countQuery = "select b from Board b where b.createdBy =: createdBy")
     @Transactional(readOnly = true)
     Page<Board> findPagesByCreatedBy(Pageable pageable, @Param("createdBy") String createdBy);
+
+    @Query("select b from Board b where b.title like %:keyword%")
+    @Transactional(readOnly = true)
+    Page<Board> findPageByTitleKeyword(@Param("keyword")String keyword, Pageable pageable);
 }
