@@ -10,5 +10,5 @@ public interface RecommendRepository extends JpaRepository<Recommend, Long> {
 
     @Modifying
     @Query(value = "delete from Recommend r where r.board.id=:boardId")
-    int bulkDeleteAll(@Param(value = "boardId") Long boardId);
+    int deleteBulkRecommends(@Param(value = "boardId") Long boardId);
 }
