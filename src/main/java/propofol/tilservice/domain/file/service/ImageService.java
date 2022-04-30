@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.ImageResponseDto;
@@ -172,5 +173,10 @@ public class ImageService {
             throw new NotFoundFileException("파일을 찾을 수 없습니다.");
         });
         return image;
+    }
+
+    @Transactional
+    public void deleteImages(Long boardId){
+        imageRepository.deleteBulkImages(boardId);
     }
 }
