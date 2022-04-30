@@ -10,15 +10,24 @@ import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.repository.BoardRepository;
+import propofol.tilservice.domain.board.repository.CommentRepository;
+import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
+import propofol.tilservice.domain.file.entity.Image;
+import propofol.tilservice.domain.file.service.ImageService;
+
+import java.io.File;
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BoardService {
     private final BoardRepository boardRepository;
-    private final RecommendService recommendService;
+    private final CommentRepository commentRepository;
+    private final RecommendRepository recommendRepository;
+    private final ImageService imageService;
 
     public Page<Board> getPageBoards(Integer pageNumber){
         PageRequest pageRequest =
@@ -44,11 +53,30 @@ public class BoardService {
         });
     }
 
+    @Transactional
     public String deleteBoard(Long boardId, String memberId){
         Board findBoard = getBoard(boardId);
-        recommendService.bulkDelete(boardId);
-        if(findBoard.getCreatedBy().equals(memberId)) boardRepository.delete(findBoard);
-        else throw new NotMatchMemberException("권한 없음.");
+
+        if(!findBoard.getCreatedBy().equals(memberId)) throw new NotMatchMemberException("권한 없음.");
+
+        List<Image> images = findBoard.getImages();
+        if(images.size() != 0){
+            imageService.deleteImages(boardId);
+
+            File deleteFolder = new File(imageService.findBoardPath() + "/" + boardId);
+            if (deleteFolder.exists()){
+                File[] files = deleteFolder.listFiles();
+                for (File file : files) {
+                    file.delete();
+                }
+                deleteFolder.delete();
+            }
+        }
+
+        recommendRepository.deleteBulkRecommends(boardId); // 추천 삭제
+        commentRepository.deleteBulkComments(boardId); // 댓글 삭제
+        boardRepository.delete(findBoard); // 게시글 삭제
+
         return "ok";
     }
 
