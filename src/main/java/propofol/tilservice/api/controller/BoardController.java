@@ -18,7 +18,6 @@ import propofol.tilservice.domain.board.service.BoardService;
 import propofol.tilservice.api.service.CommentService;
 import propofol.tilservice.domain.board.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
-import propofol.tilservice.domain.board.service.dto.CommentDto;
 import propofol.tilservice.domain.file.service.ImageService;
 
 import java.io.IOException;
