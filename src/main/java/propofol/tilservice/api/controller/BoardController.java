@@ -12,6 +12,7 @@ import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.*;
 import propofol.tilservice.domain.board.entity.Board;
+import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.service.BoardService;
 import propofol.tilservice.domain.board.service.CommentService;
 import propofol.tilservice.domain.board.service.RecommendService;
@@ -34,31 +35,9 @@ public class BoardController {
     private final ImageService fileService;
     private final CommentService commentService;
 
-    @GetMapping
-    public BoardListResponseDto getPageBoards(@RequestParam Integer page){
-        BoardListResponseDto boardListResponseDto = new BoardListResponseDto();
-        Page<Board> pageBoards = boardService.getPageBoards(page);
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
-        pageBoards.forEach(board -> {
-            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
-        });
-        return boardListResponseDto;
-    }
-
-    @GetMapping("/myBoards")
-    public BoardListResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
-                                                        @Token String memberId){
-        BoardListResponseDto boardListResponseDto = new BoardListResponseDto();
-        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
-        pageBoards.forEach(board -> {
-            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
-        });
-        return boardListResponseDto;
-    }
-
+    /**
+     * 게시글 추천수 처리
+     */
     @PostMapping("/{boardId}/recommend")
     public String createRecommend(@Token String memberId,
                                   @PathVariable(value = "boardId") Long boardId){
@@ -66,7 +45,7 @@ public class BoardController {
     }
 
     /**
-     * 부모 댓글
+     * 게시글 부모 댓글 생성
      */
     @PostMapping("/{boardId}/comment")
     public String createParentComment(@PathVariable(value = "boardId") Long boardId,
@@ -76,7 +55,7 @@ public class BoardController {
     }
 
     /**
-     * 자식 댓글
+     * 게시글 자식 댓글 생성
      */
     @PostMapping("/{boardId}/{parentId}/comment")
     public String createChildComment(@PathVariable(value = "boardId") Long boardId,
@@ -86,6 +65,16 @@ public class BoardController {
         return commentService.saveChildComment(commentDto, boardId, parentId);
     }
 
+    /**
+     * 댓글 정보 제공
+     */
+    @GetMapping("/{boardId}/comments")
+    public CommentPageResponseDto getComments(@PathVariable(value = "boardId") Long boardId,
+                                              @RequestParam("page") Integer page){
+        Page<Comment> comments = commentService.getComments(boardId, page);
+
+        return getCommentPageResponseDto(comments, boardId);
+    }
 
     /**
      * 파일 없이 게시글 저장
@@ -117,12 +106,55 @@ public class BoardController {
 
         Board board = boardService.createBoard(boardDto);
         boardService.saveBoard(board);
-        
+
         fileService.saveBoardFile(fileProperties.getBoardDir(), files, board);
 
         return "ok";
     }
 
+    /**
+     * 요청 페이지 번호에 맞는 데이터 제공
+     */
+    @GetMapping
+    public BoardPageResponseDto getPageBoards(@RequestParam Integer page){
+        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
+        Page<Board> pageBoards = boardService.getPageBoards(page);
+        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        pageBoards.forEach(board -> {
+            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
+        });
+        return boardListResponseDto;
+    }
+
+    /**
+     * 사용자 자신의 게시글 제공
+     */
+    @GetMapping("/myBoards")
+    public BoardPageResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
+                                                        @Token String memberId){
+        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
+        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
+        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        pageBoards.forEach(board -> {
+            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
+        });
+        return boardListResponseDto;
+    }
+
+    /**
+     * 게시글 정보 제공
+     **/
+    @GetMapping("/{boardId}")
+    public BoardResponseDto getBoardInfo(@PathVariable Long boardId){
+        Board board = boardService.getBoard(boardId);
+        return createBoardResponse(board);
+    }
+
+    /**
+     * 게시글 수정
+     */
     @PostMapping("/{boardId}")
     public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
                               @Token String memberId){
@@ -130,10 +162,12 @@ public class BoardController {
         return boardService.updateBoard(boardId, boardDto, memberId);
     }
 
-    @GetMapping("/{boardId}")
-    public BoardResponseDto getBoardInfo(@PathVariable Long boardId){
-        Board board = boardService.getBoard(boardId);
-        return createBoardResponse(board);
+    /**
+     * 게시글 삭제
+     */
+    @DeleteMapping("/{boardId}")
+    public String deleteBoard(@PathVariable Long boardId, @Token String memberId){
+        return boardService.deleteBoard(boardId, memberId);
     }
 
     private BoardResponseDto createBoardResponse(Board board) {
@@ -146,9 +180,17 @@ public class BoardController {
         return boardResponseDto;
     }
 
-    @DeleteMapping("/{boardId}")
-    public String deleteBoard(@PathVariable Long boardId, @Token String memberId){
-        return boardService.deleteBoard(boardId, memberId);
+    private CommentPageResponseDto getCommentPageResponseDto(Page<Comment> comments, Long boardId) {
+        CommentPageResponseDto commentPageResponseDto = new CommentPageResponseDto();
+        commentPageResponseDto.setBoardId(boardId);
+        commentPageResponseDto.setTotalCommentPageCount(comments.getTotalPages());
+        commentPageResponseDto.setTotalCommentCount(comments.getTotalElements());
+        comments.getContent().forEach(comment -> {
+            commentPageResponseDto.getComments().add(new CommentResponseDto(comment.getId(),
+                            comment.getNickname(), comment.getContent(), comment.getGroupId()));
+        });
+
+        return commentPageResponseDto;
     }
 
 }
