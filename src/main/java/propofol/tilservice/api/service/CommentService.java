@@ -1,4 +1,4 @@
-package propofol.tilservice.domain.board.service;
+package propofol.tilservice.api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,11 +7,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import propofol.tilservice.api.controller.dto.CommentRequestDto;
+import propofol.tilservice.api.feign.UserServiceFeignClient;
+import propofol.tilservice.api.feign.dto.MemberInfoDto;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.repository.BoardRepository;
 import propofol.tilservice.domain.board.repository.CommentRepository;
-import propofol.tilservice.domain.board.service.dto.CommentDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
 
 @Service
@@ -20,16 +22,18 @@ import propofol.tilservice.domain.exception.NotFoundBoardException;
 public class CommentService {
     private final CommentRepository commentRepository;
     private final BoardRepository boardRepository;
+    private final UserServiceFeignClient userServiceFeignClient;
 
     @Transactional
-    public String saveParentComment(CommentDto commentDto, Long boardId) {
+    public String saveParentComment(CommentRequestDto commentDto, Long boardId, String token) {
         Board findBoard = boardRepository.findById(boardId).orElseThrow(() -> {
             throw new NotFoundBoardException("게시글을 찾을 수 없습니다.");
         });
 
+        MemberInfoDto memberInfo = userServiceFeignClient.getMemberInfo(token);
         Comment comment = Comment.createComment()
                 .content(commentDto.getContent())
-                .nickname(null)
+                .nickname(memberInfo.getNickname())
                 .board(findBoard)
                 .build();
 
@@ -40,14 +44,15 @@ public class CommentService {
     }
 
     @Transactional
-    public String saveChildComment(CommentDto commentDto, Long boardId, Long parentId) {
+    public String saveChildComment(CommentRequestDto commentDto, Long boardId, Long parentId, String token) {
         Board findBoard = boardRepository.findById(boardId).orElseThrow(() -> {
             throw new NotFoundBoardException("게시글을 찾을 수 없습니다.");
         });
 
+        MemberInfoDto memberInfo = userServiceFeignClient.getMemberInfo(token);
         Comment comment = Comment.createComment()
                 .content(commentDto.getContent())
-                .nickname(null)
+                .nickname(memberInfo.getNickname())
                 .board(findBoard)
                 .build();
         comment.addGroupInfo(parentId);
