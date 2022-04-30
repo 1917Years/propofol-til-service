@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class ResponseImagesDto {
+public class ImagesResponseDto {
     private List<byte[]> images = new ArrayList<>();
     private String imageType;
 }

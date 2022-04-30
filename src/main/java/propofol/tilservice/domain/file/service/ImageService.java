@@ -6,8 +6,8 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import propofol.tilservice.api.common.properties.FileProperties;
-import propofol.tilservice.api.controller.dto.ResponseImageDto;
-import propofol.tilservice.api.controller.dto.ResponseImagesDto;
+import propofol.tilservice.api.controller.dto.ImageResponseDto;
+import propofol.tilservice.api.controller.dto.ImagesResponseDto;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.exception.NotFoundFileException;
 import propofol.tilservice.domain.exception.NotSaveFileException;
@@ -32,8 +32,8 @@ public class ImageService {
      * 이미지를 바이트로 변환해서 전달 -> 링크
      * 클라이언트에서 타입을 지정해서 보여줄 수 있으면 사용
      */
-    public ResponseImagesDto getImages(Long boardId){
-        ResponseImagesDto responseImageDto = new ResponseImagesDto();
+    public ImagesResponseDto getImages(Long boardId){
+        ImagesResponseDto responseImageDto = new ImagesResponseDto();
 
         String path = findBoardPath();
         List<Image> images = getImagesByBoardId(boardId);
@@ -129,8 +129,8 @@ public class ImageService {
     }
 
 
-    public ResponseImageDto getImage(Long boardId, Long imageId) throws Exception {
-        ResponseImageDto responseImageDto = new ResponseImageDto();
+    public ImageResponseDto getImage(Long boardId, Long imageId) throws Exception {
+        ImageResponseDto responseImageDto = new ImageResponseDto();
         String boardDir = fileProperties.getBoardDir();
         String path = findBoardPath();
         FileInputStream inputStream = null;
