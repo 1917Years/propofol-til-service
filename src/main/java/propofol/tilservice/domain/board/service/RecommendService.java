@@ -46,8 +46,4 @@ public class RecommendService {
         return "ok";
     }
 
-    @Transactional
-    public void bulkDelete(Long boardId){
-        recommendRepository.bulkDeleteAll(boardId);
-    }
 }
