@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -43,30 +44,36 @@ public class BoardController {
      * 게시글 추천수 처리
      */
     @PostMapping("/{boardId}/recommend")
-    public String createRecommend(@Token String memberId,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto createRecommend(@Token String memberId,
                                   @PathVariable(value = "boardId") Long boardId){
-        return recommendService.createRecommend(memberId, boardId);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "추천 생성 성공!", recommendService.createRecommend(memberId, boardId));
     }
 
     /**
      * 게시글 부모 댓글 생성
      */
     @PostMapping("/{boardId}/comment")
-    public String createParentComment(@PathVariable(value = "boardId") Long boardId,
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseDto createParentComment(@PathVariable(value = "boardId") Long boardId,
                                       @Validated @RequestBody CommentRequestDto requestDto,
                                       @Jwt String token) {
-        return commentService.saveParentComment(requestDto, boardId, token);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "댓글 생성 성공!", commentService.saveParentComment(requestDto, boardId, token));
     }
 
     /**
      * 게시글 자식 댓글 생성
      */
     @PostMapping("/{boardId}/{parentId}/comment")
-    public String createChildComment(@PathVariable(value = "boardId") Long boardId,
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseDto createChildComment(@PathVariable(value = "boardId") Long boardId,
                                 @PathVariable(value="parentId") Long parentId,
                                 @Validated @RequestBody CommentRequestDto requestDto,
                                      @Jwt String token) {
-        return commentService.saveChildComment(requestDto, boardId, parentId, token);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "대댓글 생성 성공!", commentService.saveChildComment(requestDto, boardId, parentId, token));
     }
 
     /**
@@ -74,18 +81,21 @@ public class BoardController {
      * 댓글 정보 제공
      */
     @GetMapping("/{boardId}/comments")
-    public CommentPageResponseDto getComments(@PathVariable(value = "boardId") Long boardId,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getComments(@PathVariable(value = "boardId") Long boardId,
                                               @RequestParam("page") Integer page){
         Page<Comment> comments = commentService.getComments(boardId, page);
 
-        return getCommentPageResponseDto(comments, boardId);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "댓글 조회 성공!", getCommentPageResponseDto(comments, boardId));
     }
 
     /**
      * 파일 없이 게시글 저장
      */
     @PostMapping
-    public String createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto,
                               @Jwt String token){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
 
@@ -96,15 +106,17 @@ public class BoardController {
             throw new BoardCreateException("게시글 생성 오류!");
         }
 
-        return "ok";
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 생성 성공!", "ok");
     }
 
     /**
      * 파일과 함께 게시글 저장
      */
-    @PostMapping("/files")
     @Transactional
-    public String createBoardWithFiles(
+    @PostMapping("/files")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto createBoardWithFiles(
             @RequestParam("file") List<MultipartFile> files,
             @RequestParam("title") String title,
             @RequestParam("content") String content,
@@ -128,14 +140,16 @@ public class BoardController {
             throw new BoardCreateException("게시글 생성 오류!");
         }
 
-        return "ok";
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 생성 성공!", "ok");
     }
 
     /**
      * 요청 페이지 번호에 맞는 데이터 제공
      */
     @GetMapping
-    public BoardPageResponseDto getPageBoards(@RequestParam Integer page){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getPageBoards(@RequestParam Integer page){
         BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
         Page<Board> pageBoards = boardService.getPageBoards(page);
         boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
@@ -143,23 +157,27 @@ public class BoardController {
         pageBoards.forEach(board -> {
             boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
         });
-        return boardListResponseDto;
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 페이지 조회 성공!", boardListResponseDto);
     }
 
     /**
      * 게시글 정보 제공
      **/
     @GetMapping("/{boardId}")
-    public BoardResponseDto getBoardInfo(@PathVariable Long boardId){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getBoardInfo(@PathVariable Long boardId){
         Board board = boardService.getBoard(boardId);
-        return createBoardResponse(board);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 조회 성공!", createBoardResponse(board));
     }
 
     /**
      * 게시글 수정
      */
     @PostMapping("/{boardId}")
-    public String updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
                               @Token String memberId, @Jwt String token){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
 
@@ -170,25 +188,30 @@ public class BoardController {
             throw new BoardUpdateException("게시물 수정 오류!");
         }
 
-        return "ok";
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 수정 성공!", "ok");
     }
 
     /**
      * 게시글 삭제
      */
     @DeleteMapping("/{boardId}")
-    public String deleteBoard(@PathVariable Long boardId, @Token String memberId){
-        return boardService.deleteBoard(boardId, memberId);
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto deleteBoard(@PathVariable Long boardId, @Token String memberId){
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 삭제 성공!", boardService.deleteBoard(boardId, memberId));
     }
 
     /**
      * 게시글 제목 검색
      */
     @GetMapping("/search/title/{keyword}")
-    public BoardPageResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
                                                  @RequestParam(value = "page") Integer page){
         Page<Board> boards = boardService.getPageByTitleKeyword(keyword, page);
-        return getBoardPageResponseDto(boards);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 제목 조회 성공!", getBoardPageResponseDto(boards));
     }
 
 
@@ -197,7 +220,8 @@ public class BoardController {
      * 검색 기능으로 사용해도 됨
      */
     @GetMapping("/myBoards")
-    public BoardPageResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
                                                         @Token String memberId){
         BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
         Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
@@ -206,7 +230,8 @@ public class BoardController {
         pageBoards.forEach(board -> {
             boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
         });
-        return boardListResponseDto;
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "게시글 조회 성공!", boardListResponseDto);
     }
 
 

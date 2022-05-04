@@ -13,6 +13,7 @@ import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.api.common.exception.SameMemberException;
 import propofol.tilservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.tilservice.api.common.exception.dto.ErrorDto;
+import propofol.tilservice.api.controller.dto.ResponseDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
 import propofol.tilservice.domain.exception.NotFoundCommentException;
 import propofol.tilservice.domain.exception.NotFoundFileException;
@@ -26,91 +27,83 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto SQLException(ConstraintViolationException e){
-        log.info("Message = {}", e.getMessage());
-        return null;
+    public ResponseDto NotFoundBoardException(NotFoundBoardException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "게시글 조회 실패!", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotFoundBoardException(NotFoundBoardException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto BoardUpdateException(BoardUpdateException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "게시글 수정 실패!", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto BoardUpdateException(BoardUpdateException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto BoardCreateException(BoardCreateException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "게시글 생성 실패!", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto BoardCreateException(BoardCreateException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto NotMatchMemberException(NotMatchMemberException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "잘못된 요청", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotMatchMemberException(NotMatchMemberException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto SameMemberException(SameMemberException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "잘못된 요청", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto SameMemberException(SameMemberException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto NotSaveFileException(NotSaveFileException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "파일 저장 실패!", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotSaveFileException(NotSaveFileException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto NotFoundFileException(NotFoundFileException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "파일 조회 실패!", errorDto);
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotFoundFileException(NotFoundFileException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto NotFoundCommentException(NotFoundCommentException e){
-        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
-        return errorDto;
+    public ResponseDto NotFoundCommentException(NotFoundCommentException e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "댓글 조회 실패!", errorDto);
     }
 
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto badRequestType1Error(HttpMessageNotReadableException e){
-        ErrorDto errorDto = createError("잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
+        ErrorDto errorDto = createError("잘못된 요청입니다.");
         return errorDto;
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto validationError(MethodArgumentNotValidException e){
-        ErrorDto errorDto = createError("게시글 생성 실패!", HttpStatus.BAD_REQUEST);
+    public ResponseDto validationError(MethodArgumentNotValidException e){
+        ErrorDto errorDto = createError("게시글 생성 실패!");
         e.getFieldErrors().forEach(
                 error -> {
                     errorDto.getErrors().add(new ErrorDetailDto(error.getField(), error.getDefaultMessage()));
                 }
         );
-        return errorDto;
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "검증 오류", errorDto);
     }
 
-    private ErrorDto createError(String errorMessage, HttpStatus httpStatus) {
+    private ErrorDto createError(String errorMessage) {
         ErrorDto errorDto = new ErrorDto();
-        errorDto.setMessage(errorMessage);
-        errorDto.setStatus(httpStatus.value());
+        errorDto.setErrorMessage(errorMessage);
         return errorDto;
     }
 }
