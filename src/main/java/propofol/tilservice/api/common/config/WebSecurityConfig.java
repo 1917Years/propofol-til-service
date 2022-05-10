@@ -30,11 +30,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and().cors();
 
-//        http.authorizeRequests()
-//                .antMatchers("/h2-console").permitAll()
-//                .antMatchers("/api/v1/**").authenticated()
-//                .and()
-//                .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
+        http.authorizeRequests()
+                .antMatchers("/api/v1/**").authenticated()
+                .and()
+                .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.headers().frameOptions().disable(); // h2-console을 보기 위한 설정
     }

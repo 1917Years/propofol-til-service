@@ -9,7 +9,6 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ErrorDto {
-    private Integer status;
-    private String message;
+    private String errorMessage;
     private List<ErrorDetailDto> errors = new ArrayList<>();
 }
