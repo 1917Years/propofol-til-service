@@ -31,7 +31,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and().cors();
 
         http.authorizeRequests()
-                .antMatchers("/api/v1/**").authenticated()
+                .antMatchers("/api/v1/boards/**").authenticated()
+                .anyRequest().permitAll()
                 .and()
                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
