@@ -13,6 +13,7 @@ import propofol.tilservice.api.common.annotation.Jwt;
 import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.common.exception.BoardCreateException;
 import propofol.tilservice.api.common.exception.BoardUpdateException;
+import propofol.tilservice.api.common.exception.ImageCreateException;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.*;
 import propofol.tilservice.api.service.StreakService;
@@ -84,50 +85,25 @@ public class BoardController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getComments(@PathVariable(value = "boardId") Long boardId,
                                               @RequestParam("page") Integer page){
-        Page<Comment> comments = commentService.getComments(boardId, page);
+         Page<Comment> comments = commentService.getComments(boardId, page);
 
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "댓글 조회 성공!", getCommentPageResponseDto(comments, boardId));
     }
 
     /**
-     * 파일 없이 게시글 저장
-     */
-    @PostMapping
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto createBoard(@Validated @RequestBody BoardCreateRequestDto requestDto,
-                              @Jwt String token){
-        BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
-
-        try {
-            streakService.saveStreak(token);
-            boardService.saveBoard(boardService.createBoard(boardDto));
-        }catch (Exception e){
-            throw new BoardCreateException("게시글 생성 오류!");
-        }
-
-        return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "게시글 생성 성공!", "ok");
-    }
-
-    /**
-     * 파일과 함께 게시글 저장
+     * 게시글 저장
      */
     @Transactional
-    @PostMapping("/files")
+    @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto createBoardWithFiles(
-            @RequestParam("file") List<MultipartFile> files,
+    public ResponseDto createBoard(
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam("open") Boolean open,
             @Jwt String token
     ) throws IOException {
-
-        BoardDto boardDto = new BoardDto();
-        boardDto.setTitle(title);
-        boardDto.setContent(content);
-        boardDto.setOpen(open);
+        BoardDto boardDto = createBoardDto(title, content, open);
 
         try {
             streakService.saveStreak(token);
@@ -135,13 +111,28 @@ public class BoardController {
             Board board = boardService.createBoard(boardDto);
             boardService.saveBoard(board);
 
-            fileService.saveBoardFile(fileProperties.getBoardDir(), files, board);
         }catch (Exception e){
             throw new BoardCreateException("게시글 생성 오류!");
         }
 
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "게시글 생성 성공!", "ok");
+    }
+
+    @Transactional
+    @PostMapping("/image")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto saveImage(@RequestParam("file") MultipartFile file){
+        String path = "http://localhost:8000/til-service/api/v1/images";
+        String saveFileName = null;
+        try {
+            saveFileName = fileService.saveImage(file);
+        }catch (Exception e){
+            throw new ImageCreateException("이미지 저장 오류");
+        }
+        path = path + "/" + saveFileName;
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "이미지 저장 성공!", path);
     }
 
     /**
@@ -232,6 +223,14 @@ public class BoardController {
         });
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "게시글 조회 성공!", boardListResponseDto);
+    }
+
+    private BoardDto createBoardDto(String title, String content, Boolean open) {
+        BoardDto boardDto = new BoardDto();
+        boardDto.setTitle(title);
+        boardDto.setContent(content);
+        boardDto.setOpen(open);
+        return boardDto;
     }
 
 
