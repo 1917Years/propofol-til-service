@@ -14,11 +14,7 @@ import propofol.tilservice.domain.board.repository.CommentRepository;
 import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
-import propofol.tilservice.domain.file.entity.Image;
 import propofol.tilservice.domain.file.service.ImageService;
-
-import java.io.File;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -82,19 +78,19 @@ public class BoardService {
 
         if(!findBoard.getCreatedBy().equals(memberId)) throw new NotMatchMemberException("권한 없음.");
 
-        List<Image> images = findBoard.getImages();
-        if(images.size() != 0){
-            imageService.deleteImages(boardId);
-
-            File deleteFolder = new File(imageService.findBoardPath() + "/" + boardId);
-            if (deleteFolder.exists()){
-                File[] files = deleteFolder.listFiles();
-                for (File file : files) {
-                    file.delete();
-                }
-                deleteFolder.delete();
-            }
-        }
+//        List<Image> images = findBoard.getImages();
+//        if(images.size() != 0){
+//            imageService.deleteImages(boardId);
+//
+//            File deleteFolder = new File(imageService.findBoardPath() + "/" + boardId);
+//            if (deleteFolder.exists()){
+//                File[] files = deleteFolder.listFiles();
+//                for (File file : files) {
+//                    file.delete();
+//                }
+//                deleteFolder.delete();
+//            }
+//        }
 
         recommendRepository.deleteBulkRecommends(boardId); // 추천 삭제
         commentRepository.deleteBulkComments(boardId); // 댓글 삭제
