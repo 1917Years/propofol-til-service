@@ -22,14 +22,6 @@ public class Image extends BaseEntity {
     private String storeFileName; // 저장 이름
     private String contentType; // 타입
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", updatable = false)
-    private Board board;
-    
-    public void addBoard(Board board){
-        this.board = board;
-    }
-
     @Builder(builderMethodName = "createImage")
     public Image(String uploadFileName, String storeFileName, String contentType) {
         this.uploadFileName = uploadFileName;
