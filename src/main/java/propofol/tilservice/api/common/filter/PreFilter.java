@@ -25,6 +25,9 @@ public class PreFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+        String requestURI = request.getRequestURI();
+        if(requestURI.contains("api/v1/images")) filterChain.doFilter(request, response);
+        else{
         String authorization = request.getHeader("Authorization");
 
         if(authorization != null && authorization.startsWith("Bearer ")){
@@ -34,5 +37,6 @@ public class PreFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+        }
     }
 }
