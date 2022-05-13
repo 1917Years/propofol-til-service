@@ -4,12 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.ImageResponseDto;
-import propofol.tilservice.api.controller.dto.ImagesResponseDto;
-import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.exception.NotFoundFileException;
 import propofol.tilservice.domain.exception.NotSaveFileException;
 import propofol.tilservice.domain.file.entity.Image;
@@ -18,7 +15,6 @@ import propofol.tilservice.domain.file.repository.ImageRepository;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -33,66 +29,54 @@ public class ImageService {
      * 이미지를 바이트로 변환해서 전달 -> 링크
      * 클라이언트에서 타입을 지정해서 보여줄 수 있으면 사용
      */
-    public ImagesResponseDto getImages(Long boardId){
-        ImagesResponseDto responseImageDto = new ImagesResponseDto();
-
+    public byte[] getImages(String fileName){
         String path = findBoardPath();
-        List<Image> images = getImagesByBoardId(boardId);
-        images.forEach(image -> {
-            String storeFileName = image.getStoreFileName();
-            try {
-                String file = path + "/" + boardId + "/" + storeFileName;
-                InputStream imageStream = new FileInputStream(file);
-                byte[] bytes = IOUtils.toByteArray(imageStream);
-                responseImageDto.getImages().add(bytes);
-                imageStream.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        byte[] bytes = null;
 
-        return responseImageDto;
-    }
+        try {
+            String file = path + "/" + fileName;
 
-
-
-    public List<Image> getImagesByBoardId(Long boardId){
-        return imageRepository.findImages(boardId);
-    }
-
-    public void saveBoardFile(String uploadDir, List<MultipartFile> files, Board board) throws IOException {
-
-        String path = creatFolder(uploadDir, board);
-
-        for (MultipartFile file : files) {
-            // cat
-            String originalFilename = file.getOriginalFilename();
-
-            // png
-            String extType = getExt(originalFilename);
-
-            // asfwfef1212314.png
-            String storeFilename = createStoreFilename(extType);
-
-            try {
-                file.transferTo(new File(getFullPath(path, storeFilename)));
-            } catch (IOException e) {
-                throw new NotSaveFileException("파일을 저장할 수 없습니다.");
-            }
-            Image image = Image
-                    .createImage().storeFileName(storeFilename)
-                    .contentType(file.getContentType())
-                    .uploadFileName(originalFilename)
-                    .build();
-
-            board.addImage(image);
+            InputStream imageStream = new FileInputStream(file);
+            bytes = IOUtils.toByteArray(imageStream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        return bytes;
     }
 
-    private String creatFolder(String uploadDir, Board board) {
+    public String saveImage(MultipartFile file) throws IOException {
+
+        String path = creatFolder();
+
+        // cat
+        String originalFilename = file.getOriginalFilename();
+
+        // png
+        String extType = getExt(originalFilename);
+
+        // asfwfef1212314.png
+        String storeFilename = createStoreFilename(extType);
+
+        try {
+            file.transferTo(new File(getFullPath(path, storeFilename)));
+        } catch (IOException e) {
+            throw new NotSaveFileException("파일을 저장할 수 없습니다.");
+        }
+        Image image = Image
+                .createImage().storeFileName(storeFilename)
+                .contentType(file.getContentType())
+                .uploadFileName(originalFilename)
+                .build();
+
+        imageRepository.save(image);
+
+        return storeFilename;
+    }
+
+    private String creatFolder() {
         String path = findBoardPath();
         File parentFolder = new File(path);
 
@@ -100,11 +84,6 @@ public class ImageService {
             parentFolder.mkdir();
         }
 
-        path = path + "/" + board.getId();
-        File childFolder = new File(path);
-        if(!childFolder.exists()){
-            childFolder.mkdir();
-        }
         return path;
     }
 
@@ -175,8 +154,8 @@ public class ImageService {
         return image;
     }
 
-    @Transactional
-    public void deleteImages(Long boardId){
-        imageRepository.deleteBulkImages(boardId);
-    }
+//    @Transactional
+//    public void deleteImages(Long boardId){
+//        imageRepository.deleteBulkImages(boardId);
+//    }
 }

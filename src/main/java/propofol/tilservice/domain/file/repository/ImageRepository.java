@@ -10,10 +10,12 @@ import java.util.List;
 
 public interface ImageRepository extends JpaRepository<Image, Long> {
 
-    @Query("select i from Image i where i.board.id=:boardId")
-    List<Image> findImages(@Param(value = "boardId") Long boardId);
+//    @Query("select i from Image i where i.board.id=:boardId")
+//    List<Image> findImages(@Param(value = "boardId") Long boardId);
 
-    @Modifying
-    @Query("delete from Image i where i.board.id=:boardId")
-    int deleteBulkImages(@Param(value = "boardId") Long boardId);
+//    @Modifying
+//    @Query("delete from Image i where i.board.id=:boardId")
+//    int deleteBulkImages(@Param(value = "boardId") Long boardId);w
+
+    Image findImageByStoreFileName(String storeFileName);
 }
