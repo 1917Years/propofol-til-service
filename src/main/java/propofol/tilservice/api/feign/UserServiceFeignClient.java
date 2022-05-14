@@ -8,11 +8,15 @@ import propofol.tilservice.api.feign.dto.StreakResponseDto;
 @FeignClient(name = "user-service")
 public interface UserServiceFeignClient {
 
-    @GetMapping("/api/v1/members")
-    MemberInfoDto getMemberInfo(@RequestHeader(name = "Authorization") String token);
+//    @GetMapping("/api/v1/members")
+//    MemberInfoDto getMemberInfo(@RequestHeader(name = "Authorization") String token);
 
     @PostMapping("/api/v1/members/streak")
     void saveStreak(@RequestHeader(name = "Authorization") String token,
                     @RequestBody StreakResponseDto streakResponseDto);
+
+    @GetMapping("/api/v1/members/{memberId}")
+    String getMemberNickName(@RequestHeader(name = "Authorization") String token,
+                             @PathVariable("memberId") String memberId);
 
 }
