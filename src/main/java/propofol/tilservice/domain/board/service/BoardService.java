@@ -14,7 +14,6 @@ import propofol.tilservice.domain.board.repository.CommentRepository;
 import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
-import propofol.tilservice.domain.file.service.ImageService;
 
 @Slf4j
 @Service
@@ -23,7 +22,6 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CommentRepository commentRepository;
     private final RecommendRepository recommendRepository;
-    private final ImageService imageService;
 
     /**
      *  게시글 전체 페이지 조회
@@ -55,9 +53,8 @@ public class BoardService {
     /**
      * 게시글 저장
      */
-    public String saveBoard(Board board){
-        boardRepository.save(board);
-        return "ok";
+    public Board saveBoard(Board board){
+        return boardRepository.save(board);
     }
 
     /**
