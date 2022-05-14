@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import propofol.tilservice.domain.file.service.ImageService;
+import propofol.tilservice.api.service.ImageService;
 
 @Slf4j
 @RestController
@@ -17,6 +17,6 @@ public class ImageController {
     @GetMapping("/{fileName}")
     @ResponseStatus(HttpStatus.OK)
     public byte[] getImages(@PathVariable("fileName") String fileName) {
-        return imageService.getImages(fileName);
+        return imageService.getImageBytes(fileName);
     }
 }
