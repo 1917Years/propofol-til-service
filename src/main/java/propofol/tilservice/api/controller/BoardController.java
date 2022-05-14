@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,18 +13,18 @@ import propofol.tilservice.api.common.annotation.Token;
 import propofol.tilservice.api.common.exception.BoardCreateException;
 import propofol.tilservice.api.common.exception.BoardUpdateException;
 import propofol.tilservice.api.common.exception.ImageCreateException;
-import propofol.tilservice.api.common.properties.FileProperties;
 import propofol.tilservice.api.controller.dto.*;
 import propofol.tilservice.api.service.StreakService;
+import propofol.tilservice.api.service.UserService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.service.BoardService;
 import propofol.tilservice.api.service.CommentService;
 import propofol.tilservice.domain.board.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
-import propofol.tilservice.domain.file.service.ImageService;
+import propofol.tilservice.api.service.ImageService;
+import propofol.tilservice.domain.file.entity.Image;
 
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -35,11 +34,11 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
     private final RecommendService recommendService;
-    private final ModelMapper modelMapper;
-    private final FileProperties fileProperties;
-    private final ImageService fileService;
     private final CommentService commentService;
     private final StreakService streakService;
+    private final ImageService imageService;
+    private final UserService userService;
+    private final ModelMapper modelMapper;
 
     /**
      * 게시글 추천수 처리
@@ -59,9 +58,10 @@ public class BoardController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto createParentComment(@PathVariable(value = "boardId") Long boardId,
                                       @Validated @RequestBody CommentRequestDto requestDto,
+                                      @Token String memberId,
                                       @Jwt String token) {
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "댓글 생성 성공!", commentService.saveParentComment(requestDto, boardId, token));
+                "댓글 생성 성공!", commentService.saveParentComment(requestDto, boardId, token, memberId));
     }
 
     /**
@@ -72,9 +72,10 @@ public class BoardController {
     public ResponseDto createChildComment(@PathVariable(value = "boardId") Long boardId,
                                 @PathVariable(value="parentId") Long parentId,
                                 @Validated @RequestBody CommentRequestDto requestDto,
-                                     @Jwt String token) {
+                                          @Token String memberId,
+                                          @Jwt String token) {
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "대댓글 생성 성공!", commentService.saveChildComment(requestDto, boardId, parentId, token));
+                "대댓글 생성 성공!", commentService.saveChildComment(requestDto, boardId, parentId, token, memberId));
     }
 
     /**
@@ -94,22 +95,24 @@ public class BoardController {
     /**
      * 게시글 저장
      */
-    @Transactional
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto createBoard(
-            @RequestParam("title") String title,
-            @RequestParam("content") String content,
-            @RequestParam("open") Boolean open,
-            @Jwt String token
-    ) throws IOException {
+    public ResponseDto createBoard(@RequestParam("title") String title,
+                                   @RequestParam("content") String content,
+                                   @RequestParam("open") Boolean open,
+                                   @RequestParam(value = "fileName", required = false) List<String> fileNames,
+                                   @Jwt String token) {
         BoardDto boardDto = createBoardDto(title, content, open);
 
         try {
-            streakService.saveStreak(token);
-
             Board board = boardService.createBoard(boardDto);
-            boardService.saveBoard(board);
+            Board saveBoard = boardService.saveBoard(board);
+
+            if(fileNames != null){
+                imageService.changeImageBoardId(fileNames, saveBoard);
+            }
+
+            streakService.saveStreak(token);
 
         }catch (Exception e){
             throw new BoardCreateException("게시글 생성 오류!");
@@ -119,20 +122,21 @@ public class BoardController {
                 "게시글 생성 성공!", "ok");
     }
 
-    @Transactional
     @PostMapping("/image")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto saveImage(@RequestParam("file") MultipartFile file){
-        String path = "http://localhost:8000/til-service/api/v1/images";
-        String saveFileName = null;
+    public ResponseDto saveImage(@RequestParam(value = "file", required = false) List<MultipartFile> files) {
+        List<String> storeImageNames = null;
+
         try {
-            saveFileName = fileService.saveImage(file);
+            if(files != null){
+                storeImageNames = imageService.getStoreImageNames(files);
+            }
         }catch (Exception e){
-            throw new ImageCreateException("이미지 저장 오류");
+            throw new ImageCreateException("이미지 생성 오류");
         }
-        path = path + "/" + saveFileName;
-        return new ResponseDto(HttpStatus.OK.value(), "success",
-                "이미지 저장 성공!", path);
+
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "이미지 생성 성공!", storeImageNames);
     }
 
     /**
@@ -141,13 +145,7 @@ public class BoardController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getPageBoards(@RequestParam Integer page){
-        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
-        Page<Board> pageBoards = boardService.getPageBoards(page);
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
-        pageBoards.forEach(board -> {
-            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
-        });
+        BoardPageResponseDto boardListResponseDto = getBoardPageResponseDto(page, null, null);
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "게시글 페이지 조회 성공!", boardListResponseDto);
     }
@@ -157,10 +155,10 @@ public class BoardController {
      **/
     @GetMapping("/{boardId}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getBoardInfo(@PathVariable Long boardId){
-        Board board = boardService.getBoard(boardId);
+    public ResponseDto getBoardInfo(@PathVariable Long boardId,
+                                    @Jwt String token){
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "게시글 조회 성공!", createBoardResponse(board));
+                "게시글 조회 성공!", createBoardDetailResponse(token, boardService.getBoard(boardId)));
     }
 
     /**
@@ -200,9 +198,8 @@ public class BoardController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
                                                  @RequestParam(value = "page") Integer page){
-        Page<Board> boards = boardService.getPageByTitleKeyword(keyword, page);
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "게시글 제목 조회 성공!", getBoardPageResponseDto(boards));
+                "게시글 제목 조회 성공!", getBoardPageResponseDto(page, null, keyword));
     }
 
 
@@ -212,17 +209,9 @@ public class BoardController {
      */
     @GetMapping("/myBoards")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
+    public BoardPageResponseDto getPageBoardsByMemberId(@RequestParam Integer page,
                                                         @Token String memberId){
-        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
-        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
-        pageBoards.forEach(board -> {
-            boardListResponseDto.getBoards().add(modelMapper.map(board, BoardResponseDto.class));
-        });
-        return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "게시글 조회 성공!", boardListResponseDto);
+        return getBoardPageResponseDto(page, memberId, null);
     }
 
     private BoardDto createBoardDto(String title, String content, Boolean open) {
@@ -234,14 +223,19 @@ public class BoardController {
     }
 
 
-    private BoardResponseDto createBoardResponse(Board board) {
-        BoardResponseDto boardResponseDto = new BoardResponseDto();
-        boardResponseDto.setId(board.getId());
-        boardResponseDto.setTitle(board.getTitle());
-        boardResponseDto.setContent(board.getContent());
-        boardResponseDto.setOpen(board.getOpen());
-        boardResponseDto.setRecommend(board.getRecommend());
-        return boardResponseDto;
+    private BoardDetailResponseDto createBoardDetailResponse(String token, Board board) {
+        BoardDetailResponseDto responseDto = modelMapper.map(board, BoardDetailResponseDto.class);
+        responseDto.setCommentCount(commentService.getCommentCount(board.getId()));
+        responseDto.setNickname(userService.getUserNickName(token, board.getCreatedBy()));
+
+        List<byte[]> images = responseDto.getImages();
+        List<String> imageTypes = responseDto.getImageTypes();
+        List<Image> findImages = imageService.getImagesByBoardId(board.getId());
+        findImages.forEach(findImage -> {
+            images.add(imageService.getImageBytes(findImage.getStoreFileName()));
+            imageTypes.add(findImage.getContentType());
+        });
+        return responseDto;
     }
 
     private CommentPageResponseDto getCommentPageResponseDto(Page<Comment> comments, Long boardId) {
@@ -251,22 +245,30 @@ public class BoardController {
         commentPageResponseDto.setTotalCommentCount(comments.getTotalElements());
         comments.getContent().forEach(comment -> {
             commentPageResponseDto.getComments().add(new CommentResponseDto(comment.getId(),
-                            comment.getNickname(), comment.getContent(), comment.getGroupId()));
+                            comment.getNickname(), comment.getContent(), comment.getGroupId(), comment.getCreatedDate()));
         });
 
         return commentPageResponseDto;
     }
 
-    private BoardPageResponseDto getBoardPageResponseDto(Page<Board> boards) {
-        BoardPageResponseDto boardPageResponseDto = new BoardPageResponseDto();
-        boardPageResponseDto.setTotalPageCount(boards.getTotalPages());
-        boardPageResponseDto.setTotalCount(boards.getTotalElements());
-        List<BoardResponseDto> responseDtoBoards = boardPageResponseDto.getBoards();
-        boards.getContent().forEach(board -> {
-            responseDtoBoards.add(new BoardResponseDto(board.getId(), board.getTitle(), board.getContent(),
-                    board.getRecommend(), board.getOpen()));
-        });
-        return boardPageResponseDto;
-    }
+    private BoardPageResponseDto getBoardPageResponseDto(Integer page, String memberId, String keyword) {
+        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
+        Page<Board> pageBoards = null;
 
+        if(memberId == null && keyword == null) pageBoards = boardService.getPageBoards(page);
+        else if(memberId == null && keyword != null) pageBoards = boardService.getPageByTitleKeyword(keyword, page);
+        else pageBoards = boardService.getPagesByMemberId(page, memberId);
+
+        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        pageBoards.forEach(board -> {
+            BoardResponseDto responseDto = modelMapper.map(board, BoardResponseDto.class);
+            responseDto.setCommentCount(commentService.getCommentCount(responseDto.getId()));
+            Image findImage = imageService.getTopImage(board.getId());
+            responseDto.setImageBytes(imageService.getTopImageBytes(findImage));
+            responseDto.setImageType(imageService.getImageType(findImage));
+            boardListResponseDto.getBoards().add(responseDto);
+        });
+        return boardListResponseDto;
+    }
 }
