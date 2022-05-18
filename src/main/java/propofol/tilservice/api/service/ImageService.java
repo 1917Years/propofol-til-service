@@ -33,7 +33,7 @@ public class ImageService {
      * 클라이언트에서 타입을 지정해서 보여줄 수 있으면 사용
      */
     public byte[] getImageBytes(String fileName){
-        String path = findBoardPath();
+        String path = findBoardPath(getUploadDir());
         byte[] bytes = null;
 
         try {
@@ -68,7 +68,6 @@ public class ImageService {
         } catch (IOException e) {
             throw new NotSaveFileException("파일을 저장할 수 없습니다.");
         }
-        System.out.println(" 2");
         Image image = Image
                 .createImage().storeFileName(storeFilename)
                 .contentType(file.getContentType())
@@ -79,7 +78,7 @@ public class ImageService {
     }
 
     private String creatFolder() {
-        String path = findBoardPath();
+        String path = findBoardPath(getUploadDir());
         File parentFolder = new File(path);
 
         if (!parentFolder.exists()){
@@ -89,10 +88,13 @@ public class ImageService {
         return path;
     }
 
-    public String findBoardPath() {
-        String uploadDir = fileProperties.getBoardDir();
+    public String getUploadDir() {
+        return fileProperties.getBoardDir();
+    }
+
+    public String findBoardPath(String dir) {
         Path relativePath = Paths.get("");
-        String path = relativePath.toAbsolutePath().toString() + "/" + uploadDir;
+        String path = relativePath.toAbsolutePath().toString() + "/" + dir;
         return path;
     }
 
@@ -142,7 +144,7 @@ public class ImageService {
     }
 
     public Image getTopImage(Long boardId){
-        return imageRepository.findTopByBoardId(boardId).get();
+        return imageRepository.findTopByBoardId(boardId).orElse(null);
     }
 
     public byte[] getTopImageBytes(Image image){
@@ -153,15 +155,14 @@ public class ImageService {
     public String getImageType(Image image){
         if(image == null) { return null; }
         return image.getContentType();
-//        return  "http://localhost:8000/til-service/api/v1/images/" + findImage.getStoreFileName();
     }
 
     public List<Image> getImagesByBoardId(Long boardId) {
         return imageRepository.findAllByBoardId(boardId);
     }
 
-//    @Transactional
-//    public void deleteImages(Long boardId){
-//        imageRepository.deleteBulkImages(boardId);
-//    }
+    @Transactional
+    public void deleteImages(Long boardId){
+        imageRepository.deleteImages(boardId);
+    }
 }
