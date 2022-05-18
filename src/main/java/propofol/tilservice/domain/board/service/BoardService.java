@@ -8,12 +8,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
+import propofol.tilservice.api.service.ImageService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.repository.BoardRepository;
 import propofol.tilservice.domain.board.repository.CommentRepository;
 import propofol.tilservice.domain.board.repository.RecommendRepository;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
+import propofol.tilservice.domain.file.entity.Image;
+
+import java.io.File;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -22,6 +27,7 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CommentRepository commentRepository;
     private final RecommendRepository recommendRepository;
+    private final ImageService imageService;
 
     /**
      *  게시글 전체 페이지 조회
@@ -53,6 +59,7 @@ public class BoardService {
     /**
      * 게시글 저장
      */
+    @Transactional
     public Board saveBoard(Board board){
         return boardRepository.save(board);
     }
@@ -75,20 +82,19 @@ public class BoardService {
 
         if(!findBoard.getCreatedBy().equals(memberId)) throw new NotMatchMemberException("권한 없음.");
 
-//        List<Image> images = findBoard.getImages();
-//        if(images.size() != 0){
-//            imageService.deleteImages(boardId);
-//
-//            File deleteFolder = new File(imageService.findBoardPath() + "/" + boardId);
-//            if (deleteFolder.exists()){
-//                File[] files = deleteFolder.listFiles();
-//                for (File file : files) {
-//                    file.delete();
-//                }
-//                deleteFolder.delete();
-//            }
-//        }
+        List<Image> findImages = imageService.getImagesByBoardId(boardId);
+        if(findImages != null){
+            findImages.forEach(image -> {
+                File savedFile =
+                        new File(imageService.findBoardPath(
+                                imageService.getUploadDir()) + "/" + image.getStoreFileName()
+                        );
 
+                if(savedFile.exists()) savedFile.delete();
+            });
+
+            imageService.deleteImages(boardId);
+        }
         recommendRepository.deleteBulkRecommends(boardId); // 추천 삭제
         commentRepository.deleteBulkComments(boardId); // 댓글 삭제
         boardRepository.delete(findBoard); // 게시글 삭제
