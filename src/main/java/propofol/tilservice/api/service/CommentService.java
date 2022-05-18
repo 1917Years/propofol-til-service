@@ -42,8 +42,8 @@ public class CommentService {
     }
 
     @Transactional
-    public String saveChildComment(CommentRequestDto commentDto, Long boardId, Long parentId,
-                                   String token, String memberId) {
+    public Comment saveChildComment(CommentRequestDto commentDto, Long boardId, Long parentId,
+                                    String token, String memberId) {
         Board findBoard = boardRepository.findById(boardId).orElseThrow(() -> {
             throw new NotFoundBoardException("게시글을 찾을 수 없습니다.");
         });
@@ -55,9 +55,7 @@ public class CommentService {
                 .board(findBoard)
                 .build();
         comment.addGroupInfo(parentId);
-        commentRepository.save(comment);
-
-        return "ok";
+        return commentRepository.save(comment);
     }
 
     public Page<Comment> getComments(Long boardId, Integer page) {
