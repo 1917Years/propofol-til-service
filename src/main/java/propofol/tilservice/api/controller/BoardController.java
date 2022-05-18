@@ -14,15 +14,12 @@ import propofol.tilservice.api.common.exception.BoardCreateException;
 import propofol.tilservice.api.common.exception.BoardUpdateException;
 import propofol.tilservice.api.common.exception.ImageCreateException;
 import propofol.tilservice.api.controller.dto.*;
-import propofol.tilservice.api.service.StreakService;
-import propofol.tilservice.api.service.UserService;
+import propofol.tilservice.api.service.*;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.service.BoardService;
-import propofol.tilservice.api.service.CommentService;
 import propofol.tilservice.domain.board.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
-import propofol.tilservice.api.service.ImageService;
 import propofol.tilservice.domain.file.entity.Image;
 
 import java.util.List;
@@ -33,6 +30,7 @@ import java.util.List;
 @RequestMapping("/api/v1/boards")
 public class BoardController {
     private final BoardService boardService;
+    private final CodeService codeService;
     private final RecommendService recommendService;
     private final CommentService commentService;
     private final StreakService streakService;
@@ -46,22 +44,31 @@ public class BoardController {
     @PostMapping("/{boardId}/recommend")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto createRecommend(@Token String memberId,
-                                  @PathVariable(value = "boardId") Long boardId){
+                                       @PathVariable(value = "boardId") Long boardId){
+
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "추천 생성 성공!", recommendService.createRecommend(memberId, boardId));
     }
 
+    /** TODO 게시판 댓글 리턴 구조 변경 */
     /**
      * 게시글 부모 댓글 생성
      */
     @PostMapping("/{boardId}/comment")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto createParentComment(@PathVariable(value = "boardId") Long boardId,
-                                      @Validated @RequestBody CommentRequestDto requestDto,
-                                      @Token String memberId,
-                                      @Jwt String token) {
+                                           @Validated @RequestBody CommentRequestDto requestDto,
+                                           @Token String memberId,
+                                           @Jwt String token) {
+
+        /** 리턴을 DTO로 하도록 수정 */
+        Comment comment = commentService.saveParentComment(requestDto, boardId, token, memberId);
+        CommentResponseDto responseDto  = modelMapper.map(comment, CommentResponseDto.class);
+
+//        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+//                "댓글 생성 성공!", commentService.saveParentComment(requestDto, boardId, token, memberId));
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "댓글 생성 성공!", commentService.saveParentComment(requestDto, boardId, token, memberId));
+                "댓글 생성 성공!", responseDto);
     }
 
     /**
@@ -70,12 +77,15 @@ public class BoardController {
     @PostMapping("/{boardId}/{parentId}/comment")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto createChildComment(@PathVariable(value = "boardId") Long boardId,
-                                @PathVariable(value="parentId") Long parentId,
-                                @Validated @RequestBody CommentRequestDto requestDto,
+                                          @PathVariable(value="parentId") Long parentId,
+                                          @Validated @RequestBody CommentRequestDto requestDto,
                                           @Token String memberId,
                                           @Jwt String token) {
+
+        Comment comment = commentService.saveChildComment(requestDto, boardId, parentId, token, memberId);
+        CommentResponseDto responseDto  = modelMapper.map(comment, CommentResponseDto.class);
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "대댓글 생성 성공!", commentService.saveChildComment(requestDto, boardId, parentId, token, memberId));
+                "대댓글 생성 성공!", responseDto);
     }
 
     /**
@@ -85,8 +95,8 @@ public class BoardController {
     @GetMapping("/{boardId}/comments")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getComments(@PathVariable(value = "boardId") Long boardId,
-                                              @RequestParam("page") Integer page){
-         Page<Comment> comments = commentService.getComments(boardId, page);
+                                   @RequestParam("page") Integer page){
+        Page<Comment> comments = commentService.getComments(boardId, page);
 
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "댓글 조회 성공!", getCommentPageResponseDto(comments, boardId));
@@ -167,7 +177,7 @@ public class BoardController {
     @PostMapping("/{boardId}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto updateBoard(@PathVariable Long boardId, @RequestBody BoardUpdateRequestDto requestDto,
-                              @Token String memberId, @Jwt String token){
+                                   @Token String memberId, @Jwt String token){
         BoardDto boardDto = modelMapper.map(requestDto, BoardDto.class);
 
         try {
@@ -197,7 +207,7 @@ public class BoardController {
     @GetMapping("/search/title/{keyword}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
-                                                 @RequestParam(value = "page") Integer page){
+                                        @RequestParam(value = "page") Integer page){
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "게시글 제목 조회 성공!", getBoardPageResponseDto(page, null, keyword));
     }
@@ -245,7 +255,7 @@ public class BoardController {
         commentPageResponseDto.setTotalCommentCount(comments.getTotalElements());
         comments.getContent().forEach(comment -> {
             commentPageResponseDto.getComments().add(new CommentResponseDto(comment.getId(),
-                            comment.getNickname(), comment.getContent(), comment.getGroupId(), comment.getCreatedDate()));
+                    comment.getNickname(), comment.getContent(), comment.getGroupId(), comment.getCreatedDate()));
         });
 
         return commentPageResponseDto;
