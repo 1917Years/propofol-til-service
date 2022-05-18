@@ -13,6 +13,8 @@ public class CommentResponseDto {
     private String content;
     private Long groupId;
     private LocalDateTime createdDate;
+    private String profileBytes;
+    private String profileType;
 
     public CommentResponseDto(Long id, String nickname, String content, Long groupId, LocalDateTime createdDate) {
         this.id = id;

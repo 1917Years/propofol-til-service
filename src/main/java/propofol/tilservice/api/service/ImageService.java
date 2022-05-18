@@ -17,6 +17,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class ImageService {
      * 이미지를 바이트로 변환해서 전달 -> 링크
      * 클라이언트에서 타입을 지정해서 보여줄 수 있으면 사용
      */
-    public byte[] getImageBytes(String fileName){
+    public String getImageBytes(String fileName){
         String path = findBoardPath(getUploadDir());
         byte[] bytes = null;
 
@@ -47,7 +48,7 @@ public class ImageService {
             e.printStackTrace();
         }
 
-        return bytes;
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     public List<Image> getAllImage(List<String> fileOriginNames){
@@ -120,19 +121,35 @@ public class ImageService {
     }
 
     @Transactional
-    public List<String> getStoreImageNames(List<MultipartFile> files) {
-        String path = "http://localhost:8000/til-service/api/v1/images";
-        List<String> fileNames = new ArrayList<>();
-        files.forEach(file -> {
-            try {
-                Image saveImage = saveImage(file);
-                fileNames.add(path + "/" + saveImage.getStoreFileName());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+    public List<String> getStoreImageNames(List<MultipartFile> files, Long boardId, String dir) {
+        if(boardId != null) {
+            List<Image> findImages = imageRepository.findAllByBoardId(boardId);
+            findImages.forEach(findImage -> {
+                String pathname = findBoardPath(dir) + "/" + findImage.getStoreFileName();
+                File file = new File(pathname);
+                if(file.exists()) {
+                    file.delete();
+                }
+            });
+            imageRepository.deleteImages(boardId);
+        }
 
-        return fileNames;
+        if(files != null) {
+            String path = "http://localhost:8000/til-service/api/v1/images";
+
+            List<String> fileNames = new ArrayList<>();
+            files.forEach(file -> {
+                try {
+                    Image saveImage = saveImage(file);
+                    fileNames.add(path + "/" + saveImage.getStoreFileName());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            return fileNames;
+        }
+        return null;
     }
 
     @Transactional
@@ -147,7 +164,7 @@ public class ImageService {
         return imageRepository.findTopByBoardId(boardId).orElse(null);
     }
 
-    public byte[] getTopImageBytes(Image image){
+    public String getTopImageBytes(Image image){
         if(image == null) { return null; }
         return getImageBytes(image.getStoreFileName());
     }

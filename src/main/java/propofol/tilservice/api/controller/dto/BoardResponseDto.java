@@ -12,8 +12,9 @@ import java.time.LocalDateTime;
 public class BoardResponseDto {
     private Long id;
     private String title;
+    private String nickname;
     private String content;
-    private byte[] imageBytes;
+    private String imageBytes;
     private String imageType;
     private Integer recommend;
     private Integer commentCount;

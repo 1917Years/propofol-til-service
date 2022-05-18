@@ -15,8 +15,10 @@ public class BoardDetailResponseDto {
     private String title;
     private String content;
     private String nickname;
-    private List<byte[]> images = new ArrayList<>();
+    private List<String> images = new ArrayList<>();
     private List<String> imageTypes = new ArrayList<>();
+    private String profileBytes;
+    private String profileType;
     private Boolean open;
     private int recommend;
     private int commentCount;

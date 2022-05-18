@@ -16,7 +16,7 @@ public class ImageController {
 
     @GetMapping("/{fileName}")
     @ResponseStatus(HttpStatus.OK)
-    public byte[] getImages(@PathVariable("fileName") String fileName) {
+    public String getImages(@PathVariable("fileName") String fileName) {
         return imageService.getImageBytes(fileName);
     }
 }
