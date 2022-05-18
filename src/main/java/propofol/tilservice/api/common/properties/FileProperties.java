@@ -9,8 +9,10 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 @ConstructorBinding
 public class FileProperties {
     private final String boardDir;
+    private final String codeDir;
 
-    public FileProperties(String profileDir, String boardDir) {
+    public FileProperties(String boardDir, String codeDir) {
         this.boardDir = boardDir;
+        this.codeDir = codeDir;
     }
 }
