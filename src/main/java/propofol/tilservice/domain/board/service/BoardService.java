@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
 import propofol.tilservice.api.service.ImageService;
+import propofol.tilservice.api.service.StreakService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.repository.BoardRepository;
 import propofol.tilservice.domain.board.repository.CommentRepository;
@@ -28,6 +29,7 @@ public class BoardService {
     private final CommentRepository commentRepository;
     private final RecommendRepository recommendRepository;
     private final ImageService imageService;
+    private final StreakService streakService;
 
     /**
      *  게시글 전체 페이지 조회
@@ -119,11 +121,19 @@ public class BoardService {
      * 게시글 수정
      */
     @Transactional
-    public String updateBoard(Long boardId, BoardDto boardDto, String memberId) {
+    public Board updateBoard(Long boardId, BoardDto boardDto, String memberId, String token, List<String> fileNames) {
         Board findBoard = getBoard(boardId);
         if(findBoard.getCreatedBy().equals(memberId))
             findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
         else throw new NotMatchMemberException("권한 없음.");
-        return "ok";
+
+        if(fileNames != null){
+            fileNames.forEach(fileName -> {
+                imageService.changeImageBoardId(fileNames, findBoard);
+            });
+        }
+
+        streakService.saveStreak(token);
+        return findBoard;
     }
 }
