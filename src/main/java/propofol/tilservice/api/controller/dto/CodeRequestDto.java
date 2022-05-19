@@ -9,5 +9,5 @@ public class CodeRequestDto {
     @NotBlank
     private String type;
     @NotBlank
-    private String content;
+    private String code;
 }

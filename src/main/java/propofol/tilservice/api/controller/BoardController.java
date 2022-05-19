@@ -185,7 +185,8 @@ public class BoardController {
                                    @RequestParam("content") String content,
                                    @RequestParam("open") Boolean open,
                                    @RequestParam(value="fileName", required = false) List<String> fileNames,
-                                   @Token String memberId, @Jwt String token){
+                                   @Token String memberId,
+                                   @Jwt String token){
 
         BoardDto boardDto = createBoardDto(title, content, open);
         boardService.updateBoard(boardId, boardDto, memberId, token, fileNames);
@@ -219,12 +220,12 @@ public class BoardController {
     /**
      * 코드 컴파일 추가
      */
-    @GetMapping("/code/{boardId}")
+    @PostMapping("/code/{boardId}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getCodeCompile(@Validated @RequestBody CodeRequestDto requestDto,
                                       @PathVariable("boardId") String boardId) throws IOException {
         return new ResponseDto(HttpStatus.OK.value(), "success", "컴파일 성공",
-                codeService.compileCode(requestDto.getContent(), requestDto.getType().toLowerCase(Locale.ROOT),
+                codeService.compileCode(requestDto.getCode(), requestDto.getType().toLowerCase(Locale.ROOT),
                         boardId, getCodeDir()));
     }
 
