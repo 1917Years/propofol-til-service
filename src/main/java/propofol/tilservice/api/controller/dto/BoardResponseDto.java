@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -20,4 +22,5 @@ public class BoardResponseDto {
     private Integer commentCount;
     private Boolean open;
     private LocalDateTime createdDate;
+    private List<TagResponseDto> tags = new ArrayList<>();
 }

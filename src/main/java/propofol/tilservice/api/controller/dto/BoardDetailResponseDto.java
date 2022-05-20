@@ -23,4 +23,5 @@ public class BoardDetailResponseDto {
     private int recommend;
     private int commentCount;
     private LocalDateTime createdDate;
+    private List<TagResponseDto> tags = new ArrayList<>();
 }
