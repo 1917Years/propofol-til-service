@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.controller.dto.CommentRequestDto;
+import propofol.tilservice.api.feign.service.UserService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.domain.board.repository.BoardRepository;
