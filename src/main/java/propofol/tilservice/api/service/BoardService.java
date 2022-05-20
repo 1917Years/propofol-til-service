@@ -1,4 +1,4 @@
-package propofol.tilservice.domain.board.service;
+package propofol.tilservice.api.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,17 +8,21 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
+import propofol.tilservice.api.feign.service.UserService;
 import propofol.tilservice.api.service.ImageService;
 import propofol.tilservice.api.service.StreakService;
 import propofol.tilservice.domain.board.entity.Board;
+import propofol.tilservice.domain.board.entity.BoardTag;
 import propofol.tilservice.domain.board.repository.BoardRepository;
 import propofol.tilservice.domain.board.repository.CommentRepository;
 import propofol.tilservice.domain.board.repository.RecommendRepository;
+import propofol.tilservice.domain.board.service.BoardTagService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.exception.NotFoundBoardException;
 import propofol.tilservice.domain.file.entity.Image;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -30,6 +34,8 @@ public class BoardService {
     private final RecommendRepository recommendRepository;
     private final ImageService imageService;
     private final StreakService streakService;
+    private final BoardTagService boardTagService;
+    private final UserService userService;
 
     /**
      *  게시글 전체 페이지 조회
@@ -62,8 +68,25 @@ public class BoardService {
      * 게시글 저장
      */
     @Transactional
-    public Board saveBoard(Board board){
-        return boardRepository.save(board);
+    public String saveBoard(BoardDto boardDto, List<String> fileNames, List<Long> tagIds, String token){
+        Board board = createBoard(boardDto);
+
+        Board saveBoard = boardRepository.save(board);
+
+        if(fileNames != null){
+            imageService.changeImageBoardId(fileNames, saveBoard);
+        }
+
+        if(tagIds != null){
+            List<BoardTag> boardTags = createBoardTags(tagIds, saveBoard);
+
+            boardTagService.saveAllTags(boardTags);
+            userService.saveMemberTag(token, tagIds);
+        }
+
+        streakService.saveStreak(token);
+
+        return "ok";
     }
 
     /**
@@ -105,6 +128,36 @@ public class BoardService {
     }
 
     /**
+     * 게시글 수정
+     */
+    @Transactional
+    public Board updateBoard(Long boardId, BoardDto boardDto, String memberId, String token,
+                             List<Long> tagIds, List<String> fileNames) {
+        Board findBoard = getBoard(boardId);
+        if(findBoard.getCreatedBy().equals(memberId))
+            findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
+        else throw new NotMatchMemberException("권한 없음.");
+
+        if(fileNames != null){
+            fileNames.forEach(fileName -> {
+                imageService.changeImageBoardId(fileNames, findBoard);
+            });
+        }
+
+        if(tagIds != null){
+            boardTagService.deleteTagsByBoardId(boardId);
+
+            List<BoardTag> boardTags = createBoardTags(tagIds, findBoard);
+
+            boardTagService.saveAllTags(boardTags);
+            userService.saveMemberTag(token, tagIds);
+        }
+
+        streakService.saveStreak(token);
+        return findBoard;
+    }
+
+    /**
      * Board Entity 생성
      */
     public Board createBoard(BoardDto boardDto) {
@@ -117,23 +170,13 @@ public class BoardService {
         return board;
     }
 
-    /**
-     * 게시글 수정
-     */
-    @Transactional
-    public Board updateBoard(Long boardId, BoardDto boardDto, String memberId, String token, List<String> fileNames) {
-        Board findBoard = getBoard(boardId);
-        if(findBoard.getCreatedBy().equals(memberId))
-            findBoard.updateBoard(boardDto.getTitle(), boardDto.getContent(), boardDto.getOpen());
-        else throw new NotMatchMemberException("권한 없음.");
-
-        if(fileNames != null){
-            fileNames.forEach(fileName -> {
-                imageService.changeImageBoardId(fileNames, findBoard);
-            });
-        }
-
-        streakService.saveStreak(token);
-        return findBoard;
+    private List<BoardTag> createBoardTags(List<Long> tagIds, Board saveBoard) {
+        List<BoardTag> boardTags = new ArrayList<>();
+        tagIds.forEach(id -> {
+            BoardTag tag = BoardTag.createTag().tagId(id).build();
+            tag.changeBoard(saveBoard);
+            boardTags.add(tag);
+        });
+        return boardTags;
     }
 }
