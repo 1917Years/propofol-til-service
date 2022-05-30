@@ -17,10 +17,6 @@ public class BoardTagService {
         boardTagRepository.saveAll(tags);
     }
 
-    public List<BoardTag> findAllByBoardId(Long boardId){
-        return boardTagRepository.findAllByBoardId(boardId);
-    }
-
     public void deleteTagsByBoardId(Long boardId) {
         boardTagRepository.deleteAllByBoardId(boardId);
     }

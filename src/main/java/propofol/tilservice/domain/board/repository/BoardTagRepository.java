@@ -6,12 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import propofol.tilservice.domain.board.entity.BoardTag;
 
-import java.util.List;
-
 public interface BoardTagRepository extends JpaRepository<BoardTag, Long> {
-
-
-    List<BoardTag> findAllByBoardId(Long boardId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from BoardTag bt where bt.board.id = :boardId")
