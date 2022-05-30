@@ -8,9 +8,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.api.common.exception.NotMatchMemberException;
+import propofol.tilservice.api.feign.AlarmType;
+import propofol.tilservice.api.feign.dto.MemberSaveBoardDto;
+import propofol.tilservice.api.feign.service.AlarmService;
 import propofol.tilservice.api.feign.service.UserService;
-import propofol.tilservice.api.service.ImageService;
-import propofol.tilservice.api.service.StreakService;
 import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.BoardTag;
 import propofol.tilservice.domain.board.repository.BoardRepository;
@@ -24,6 +25,7 @@ import propofol.tilservice.domain.file.entity.Image;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -36,22 +38,24 @@ public class BoardService {
     private final StreakService streakService;
     private final BoardTagService boardTagService;
     private final UserService userService;
+    private final AlarmService alarmService;
+
 
     /**
-     *  게시글 전체 페이지 조회
+     *  게시글 전체 페이지 조회, 자신의 것 제외
      */
-    public Page<Board> getPageBoards(Integer pageNumber){
+    public Page<Board> getPageBoardsNotMine(String memberId, Integer pageNumber){
         PageRequest pageRequest =
                 PageRequest.of(pageNumber - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
-        return boardRepository.findAll(pageRequest);
+        return boardRepository.findAllNotMine(memberId, pageRequest);
     }
 
     /**
      * 제목 검색
      */
-    public Page<Board> getPageByTitleKeyword(String keyword, int page){
+    public Page<Board> getPageByTitleKeywordNotMine(String memberId, String keyword, int page){
         PageRequest pageRequest = PageRequest.of(page - 1, 10, Sort.by(Sort.Direction.DESC, "id"));
-        return boardRepository.findPageByTitleKeyword(keyword, pageRequest);
+        return boardRepository.findPageByTitleKeywordNotMine(memberId, keyword, pageRequest);
     }
 
     /**
@@ -85,6 +89,15 @@ public class BoardService {
         }
 
         streakService.saveStreak(token);
+
+        MemberSaveBoardDto memberSaveBoardDto
+                = userService.getMyFollowerIdsAndNickname(token, Long.parseLong(saveBoard.getCreatedBy()));
+
+        if(memberSaveBoardDto.getMemberIds().size() > 0) {
+            alarmService.saveListAlarm(new ArrayList<>(memberSaveBoardDto.getMemberIds()),
+                    memberSaveBoardDto.getNickname() + "님이 새로운 게시글을 작성하였습니다.", AlarmType.SUBSCRIBER_BOARD.toString(),
+                    saveBoard.getId(), token);
+        }
 
         return "ok";
     }
@@ -168,6 +181,17 @@ public class BoardService {
                 .recommend(0)
                 .build();
         return board;
+    }
+
+    public Page<Board> getPageByTagIdsNotMine(String memberId, Set<Long> tagIds, int page){
+        PageRequest pageRequest = PageRequest.of(page - 1, 10);
+        return boardRepository.findPageByTagIdsNotMine(memberId, tagIds, pageRequest);
+    }
+
+    public Page<Board> getPagesByKeywordAndTagIdsNotMine(Integer pageNumber, String memberId,
+                                                            String keyword, Set<Long> tagIds){
+        PageRequest pageRequest = PageRequest.of(pageNumber - 1, 10);
+        return boardRepository.findPagesByKeywordAndTagIdsNotMine(pageRequest, memberId, keyword, tagIds);
     }
 
     private List<BoardTag> createBoardTags(List<Long> tagIds, Board saveBoard) {
