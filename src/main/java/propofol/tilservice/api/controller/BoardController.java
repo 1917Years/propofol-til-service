@@ -21,15 +21,13 @@ import propofol.tilservice.domain.board.entity.Board;
 import propofol.tilservice.domain.board.entity.BoardTag;
 import propofol.tilservice.domain.board.entity.Comment;
 import propofol.tilservice.api.service.BoardService;
-import propofol.tilservice.domain.board.service.BoardTagService;
 import propofol.tilservice.api.service.RecommendService;
 import propofol.tilservice.domain.board.service.dto.BoardDto;
 import propofol.tilservice.domain.file.entity.Image;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -45,7 +43,6 @@ public class BoardController {
     private final ModelMapper modelMapper;
     private final FileProperties fileProperties;
     private final TagService tagService;
-    private final BoardTagService boardTagService;
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -101,7 +98,6 @@ public class BoardController {
     }
 
     /**
-     * 게시글 먼저 받고 이 후 Id로 댓글 받아가기
      * 댓글 정보 제공
      */
     @GetMapping("/{boardId}/comments")
@@ -113,6 +109,17 @@ public class BoardController {
 
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "댓글 조회 성공!", getCommentPageResponseDto(comments, boardId, token));
+    }
+
+    /**
+     * 댓글 삭제
+     */
+    @DeleteMapping("/comments/{commentId}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto deleteComments(@PathVariable("commentId") Long commentId){
+
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "댓글 조회 성공!", commentService.deleteComment(commentId));
     }
 
 
@@ -152,8 +159,12 @@ public class BoardController {
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getPageBoards(@RequestParam Integer page, @Jwt String token){
-        BoardPageResponseDto boardListResponseDto = getBoardPageResponseDto(page, null, null, token);
+    public ResponseDto getPageBoards(@RequestParam Integer page,
+                                     @Token String memberId,
+                                     @Jwt String token){
+        BoardPageResponseDto boardListResponseDto
+                = getBoardPageResponseDto(page, memberId, null, null, token);
+
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "게시글 페이지 조회 성공!", boardListResponseDto);
     }
@@ -203,13 +214,15 @@ public class BoardController {
     /**
      * 게시글 제목 검색
      */
-    @GetMapping("/search/title/{keyword}")
+    @GetMapping("/search")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto findBoardByTitle(@PathVariable(value = "keyword") String keyword,
+    public ResponseDto findBoardBySearch(@RequestParam(value = "keyword", required = false) String keyword,
+                                        @RequestParam(value = "tagId", required = false) Set<Long> tagIds,
                                         @RequestParam(value = "page") Integer page,
+                                        @Token String memberId,
                                         @Jwt String token){
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "게시글 제목 조회 성공!", getBoardPageResponseDto(page, null, keyword, token));
+                "게시글 제목 조회 성공!", getBoardPageResponseDto(page, memberId, keyword, tagIds, token));
     }
 
     /**
@@ -233,7 +246,7 @@ public class BoardController {
                                                @Token String memberId,
                                                @Jwt String token){
         return new ResponseDto(HttpStatus.OK.value(), "success", "내 글 조회 성공",
-                getBoardPageResponseDto(page, memberId, null, token));
+                getBoardPageResponseDtoByMine(page, memberId, token));
     }
 
     private String getCodeDir() {
@@ -272,14 +285,13 @@ public class BoardController {
         responseDto.setProfileType(userProfile.getProfileType());
 
         // 태그
-        List<BoardTag> boardTags = boardTagService.findAllByBoardId(board.getId());
-        List<Long> tagIds = new ArrayList<>();
-        boardTags.forEach(boardTag -> {
-            tagIds.add(boardTag.getTagId());
-        });
+        List<BoardTag> boardTags = board.getTags();
+
+        Set<Long> tagIds = boardTags.stream().map(BoardTag::getTagId).collect(Collectors.toSet());
         List<TagDto> findTags = tagService.getTagsByTagIds(token, tagIds);
+
         findTags.forEach(findTag -> {
-            responseDto.getTags().add(modelMapper.map(findTag, TagResponseDto.class));
+            responseDto.getTagInfos().add(modelMapper.map(findTag, TagResponseDto.class));
         });
 
         return responseDto;
@@ -307,39 +319,72 @@ public class BoardController {
     }
 
     /** 닉네임 전송 추가 */
-    //TODO : 성능 개선 필요
-    private BoardPageResponseDto getBoardPageResponseDto(Integer page, String memberId, String keyword, String token) {
-        BoardPageResponseDto boardListResponseDto = new BoardPageResponseDto();
+    private BoardPageResponseDto getBoardPageResponseDto(Integer page, String memberId, String keyword,
+                                                         Set<Long> tagIds, String token) {
         Page<Board> pageBoards = null;
+        if(keyword == null && tagIds == null) pageBoards = boardService.getPageBoardsNotMine(memberId, page);
+        else if(keyword != null && tagIds == null) pageBoards = boardService.getPageByTitleKeywordNotMine(memberId, keyword, page);
+        else if(keyword == null && tagIds != null) pageBoards = boardService.getPageByTagIdsNotMine(memberId, tagIds, page);
+        else pageBoards = boardService.getPagesByKeywordAndTagIdsNotMine(page, memberId, keyword, tagIds);
 
-        if(memberId == null && keyword == null) pageBoards = boardService.getPageBoards(page);
-        else if(memberId == null && keyword != null) pageBoards = boardService.getPageByTitleKeyword(keyword, page);
-        else pageBoards = boardService.getPagesByMemberId(page, memberId);
+        BoardPageResponseDto boardPageResponseDto = new BoardPageResponseDto();
+        boardPageResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardPageResponseDto.setTotalCount(pageBoards.getTotalElements());
 
-        boardListResponseDto.setTotalPageCount(pageBoards.getTotalPages());
-        boardListResponseDto.setTotalCount(pageBoards.getTotalElements());
+        return createBoardPageResponseDto(token, pageBoards.getContent(), boardPageResponseDto);
+    }
 
-        pageBoards.forEach(board -> {
-            BoardResponseDto responseDto = modelMapper.map(board, BoardResponseDto.class);
-            responseDto.setCommentCount(commentService.getCommentCount(responseDto.getId()));
-            Image findImage = imageService.getTopImage(board.getId());
-            responseDto.setNickname(userService.getUserNickName(token, board.getCreatedBy()));
-            responseDto.setImageBytes(imageService.getTopImageBytes(findImage));
-            responseDto.setImageType(imageService.getImageType(findImage));
+    private BoardPageResponseDto getBoardPageResponseDtoByMine(Integer page, String memberId, String token) {
+        Page<Board> pageBoards = boardService.getPagesByMemberId(page, memberId);
 
-            // 태그 정보 추가
-            List<BoardTag> boardTags = boardTagService.findAllByBoardId(board.getId());
-            List<Long> tagIds = new ArrayList<>();
-            boardTags.forEach(boardTag -> {
-                tagIds.add(boardTag.getTagId());
-            });
-            List<TagDto> findTags = tagService.getTagsByTagIds(token, tagIds);
-            findTags.forEach(findTag -> {
-                responseDto.getTags().add(modelMapper.map(findTag, TagResponseDto.class));
-            });
-            boardListResponseDto.getBoards().add(responseDto);
-        });
+        Set<Long> tagIds = new HashSet<>();
+        pageBoards.getContent().forEach(board -> board.getTags().stream().map(tag -> tagIds.add(tag.getTagId())));
+
+        BoardPageResponseDto boardPageResponseDto = new BoardPageResponseDto();
+        boardPageResponseDto.setTotalPageCount(pageBoards.getTotalPages());
+        boardPageResponseDto.setTotalCount(pageBoards.getTotalElements());
+        BoardPageResponseDto boardListResponseDto = createBoardPageResponseDto(token,
+                pageBoards.getContent(), boardPageResponseDto);
 
         return boardListResponseDto;
+    }
+
+    private BoardPageResponseDto createBoardPageResponseDto(String token, List<Board> boards,
+                                                            BoardPageResponseDto boardPageResponseDto) {
+
+        Set<Long> tagIds = new HashSet<>();
+        boards.forEach(board -> {
+            board.getTags().forEach(tag -> {
+                tagIds.add(tag.getTagId());
+            });
+        });
+
+        List<TagDto> tags = tagService.getTagsByTagIds(token, tagIds);
+
+        boards.forEach(board -> {
+            BoardResponseDto responseDto = modelMapper.map(board, BoardResponseDto.class);
+
+            responseDto.setCommentCount(commentService.getCommentCount(responseDto.getId()));
+
+            List<Image> images = board.getImages();
+            if(images.size() > 0) {
+                responseDto.setImageBytes(imageService.getTopImageBytes(images.get(0)));
+                responseDto.setImageType(imageService.getImageType(images.get(0)));
+            }
+            responseDto.setNickname(userService.getUserNickName(token, board.getCreatedBy()));
+
+            List<BoardTag> boardTags = board.getTags();
+            boardTags.forEach(boardTag -> {
+                tags.forEach(tag -> {
+                    if(tag.getId() == boardTag.getTagId()){
+                        responseDto.getTagInfos().add(modelMapper.map(tag, TagResponseDto.class));
+                    }
+                });
+            });
+
+            boardPageResponseDto.getBoards().add(responseDto);
+        });
+
+        return boardPageResponseDto;
     }
 }
