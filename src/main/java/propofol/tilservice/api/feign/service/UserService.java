@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import propofol.tilservice.api.controller.dto.ProfileImageResponseDto;
 import propofol.tilservice.api.feign.UserServiceFeignClient;
+import propofol.tilservice.api.feign.dto.MemberSaveBoardDto;
 import propofol.tilservice.api.feign.dto.RecommendDto;
 import propofol.tilservice.api.feign.dto.TagIdsDto;
 
@@ -32,5 +33,9 @@ public class UserService {
         RecommendDto recommendDto = new RecommendDto();
         recommendDto.setId(memberId);
         userServiceFeignClient.plusMemberTotalRecommend(token, recommendDto);
+    }
+
+    public MemberSaveBoardDto getMyFollowerIdsAndNickname(String token, long memberId){
+        return userServiceFeignClient.getMyFollowerIds(token, memberId);
     }
 }

@@ -3,6 +3,7 @@ package propofol.tilservice.api.feign;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import propofol.tilservice.api.controller.dto.ProfileImageResponseDto;
+import propofol.tilservice.api.feign.dto.MemberSaveBoardDto;
 import propofol.tilservice.api.feign.dto.RecommendDto;
 import propofol.tilservice.api.feign.dto.StreakResponseDto;
 import propofol.tilservice.api.feign.dto.TagIdsDto;
@@ -30,4 +31,8 @@ public interface UserServiceFeignClient {
     @PostMapping("/api/v1/members/recommend")
     void plusMemberTotalRecommend(@RequestHeader(name="Authorization") String token,
                                   @RequestBody RecommendDto recommendDto);
+
+    @GetMapping("/api/v1/subscribe/feign/followers/{memberId}")
+    MemberSaveBoardDto getMyFollowerIds(@RequestHeader(name="Authorization") String token,
+                                        @PathVariable("memberId") Long memberId);
 }
