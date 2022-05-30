@@ -21,7 +21,7 @@ public class Comment extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
-//    @Column(nullable = false)
+    private Long memberId;
     private String nickname;
 
     private Long groupId;
@@ -35,8 +35,9 @@ public class Comment extends BaseEntity {
     }
 
     @Builder(builderMethodName = "createComment")
-    public Comment(String content, String nickname, Board board) {
+    public Comment(String content, Long memberId, String nickname, Board board) {
         this.content = content;
+        this.memberId = memberId;
         this.nickname = nickname;
         this.board = board;
     }

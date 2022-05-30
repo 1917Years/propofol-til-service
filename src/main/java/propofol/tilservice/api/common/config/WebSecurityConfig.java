@@ -31,16 +31,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and().cors();
 
         http.authorizeRequests()
-                .antMatchers("/api/v1/**").authenticated()
+                .antMatchers("/api/v1/boards/**").authenticated()
+                .anyRequest().permitAll()
                 .and()
                 .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.headers().frameOptions().disable(); // h2-console을 보기 위한 설정
-    }
-
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
     }
 
     @Bean

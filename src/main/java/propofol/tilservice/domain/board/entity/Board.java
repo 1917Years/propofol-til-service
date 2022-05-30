@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.DynamicUpdate;
 import propofol.tilservice.domain.entity.BaseEntity;
 import propofol.tilservice.domain.file.entity.Image;
@@ -25,6 +26,7 @@ public class Board extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
+    @Lob
     @Column(nullable = false)
     private String content;
 
@@ -37,15 +39,15 @@ public class Board extends BaseEntity {
     private List<Recommend> recommends = new ArrayList<>();
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
-    private List<Image> images = new ArrayList<>();
-
-    @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
     private List<Comment> comments = new ArrayList<>();
 
-    public void addImage(Image image){
-        images.add(image);
-        image.addBoard(this);
-    }
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
+    private List<BoardTag> tags = new ArrayList<>();
+
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.PERSIST)
+    private List<Image> images = new ArrayList<>();
 
     public void addRecommend(Recommend recommend){
         recommend.addBoard(this);

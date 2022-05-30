@@ -23,10 +23,10 @@ public class Image extends BaseEntity {
     private String contentType; // 타입
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", updatable = false)
+    @JoinColumn(name = "board_id")
     private Board board;
-    
-    public void addBoard(Board board){
+
+    public void changeBoard(Board board){
         this.board = board;
     }
 

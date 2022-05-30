@@ -17,12 +17,12 @@ public class Recommend {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "recommend_id")
     private Long id;
+    private String memberId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", updatable = false)
     private Board board;
 
-    private String memberId;
 
     public void addBoard(Board board){
         this.board = board;
