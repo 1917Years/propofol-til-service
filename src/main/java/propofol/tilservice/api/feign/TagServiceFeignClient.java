@@ -6,12 +6,12 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import propofol.tilservice.api.feign.dto.TagsDto;
 
-import java.util.List;
+import java.util.Set;
 
 @FeignClient("tag-service")
 public interface TagServiceFeignClient {
 
     @GetMapping("/api/v1/tags/ids")
     TagsDto getTagsByTagId(@RequestHeader("Authorization") String token,
-                           @RequestParam("ids") List<Long> ids);
+                           @RequestParam("ids") Set<Long> ids);
 }
