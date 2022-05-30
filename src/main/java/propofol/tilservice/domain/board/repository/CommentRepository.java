@@ -13,10 +13,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("select c from Comment c where c.board.id=:boardId group by c.groupId, c.id order by c.groupId, c.id asc")
     Page<Comment> findPageComments(@Param(value = "boardId") Long boardId, Pageable pageable);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Comment c where c.board.id=:boardId")
     int deleteBulkComments(@Param("boardId") Long boardId);
 
+    @Modifying
+    @Query("delete from Comment c where c.groupId=:groupId")
+    int deleteBulkCommentsByGroupId(@Param("groupId") Long groupId);
+
     @Query("select count(c) from Comment c where c.board.id = :boardId")
     int getCommentCount(@Param("boardId") Long boardId);
+
 }
