@@ -22,5 +22,5 @@ public class BoardResponseDto {
     private Integer commentCount;
     private Boolean open;
     private LocalDateTime createdDate;
-    private List<TagResponseDto> tags = new ArrayList<>();
+    private List<TagResponseDto> tagInfos = new ArrayList<>();
 }
