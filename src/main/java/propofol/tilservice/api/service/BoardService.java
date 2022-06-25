@@ -40,6 +40,12 @@ public class BoardService {
     private final UserService userService;
     private final AlarmService alarmService;
 
+    /**
+     * 추천수 높은 게시글 조회
+     */
+    public List<Board> findBoardByRecommend(String memberId) {
+        return boardRepository.findTop3ByCreatedByOrderByRecommendDesc(memberId);
+    }
 
     /**
      *  게시글 전체 페이지 조회, 자신의 것 제외
@@ -135,6 +141,7 @@ public class BoardService {
         }
         recommendRepository.deleteBulkRecommends(boardId); // 추천 삭제
         commentRepository.deleteBulkComments(boardId); // 댓글 삭제
+        boardTagService.deleteTagsByBoardId(boardId);
         boardRepository.delete(findBoard); // 게시글 삭제
 
         return "ok";

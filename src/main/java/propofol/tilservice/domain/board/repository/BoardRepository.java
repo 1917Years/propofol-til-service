@@ -9,8 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import propofol.tilservice.domain.board.entity.Board;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
+    List<Board> findTop3ByCreatedByOrderByRecommendDesc(String createdBy);
+
     @Query("select b from Board b")
     @Transactional(readOnly = true)
     Page<Board> findAll(Pageable pageable);
