@@ -53,7 +53,7 @@ public class RecommendService {
         String userNickName = userService.getUserNickName(token, memberId);
 
         alarmService.saveAlarm(Long.parseLong(findBoard.getCreatedBy()),
-                "등록된 게시글 " + findBoard.getTitle() + "에 " + userNickName + "님이 좋아요를 누르셨습니다.", token, LIKE);
+                "등록된 게시글 " + findBoard.getTitle() + "에 " + userNickName + "님이 좋아요를 누르셨습니다.", token, LIKE, boardId);
 
         return "ok";
     }

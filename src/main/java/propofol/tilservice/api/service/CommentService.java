@@ -45,8 +45,8 @@ public class CommentService {
         Comment saveComment = commentRepository.save(comment);
         saveComment.addGroupInfo(saveComment.getId());
 
-        alarmService.saveAlarm(Long.parseLong(findBoard.getContent()),
-                "등록된 글 " + findBoard.getTitle() + "에 새로운 댓글이 추가되었습니다.", token, COMMENT);
+        alarmService.saveAlarm(Long.parseLong(findBoard.getCreatedBy()),
+                "등록된 글 " + findBoard.getTitle() + "에 새로운 댓글이 추가되었습니다.", token, COMMENT, boardId);
 
         return saveComment;
     }
@@ -70,7 +70,7 @@ public class CommentService {
         Comment parentComment = findById(parentId);
 
         alarmService.saveAlarm(parentComment.getMemberId(),
-                "등록된 글 " + findBoard.getTitle() + "에 새로운 답글이 추가되었습니다.", token, COMMENT);
+                "등록된 글 " + findBoard.getTitle() + "에 새로운 답글이 추가되었습니다.", token, COMMENT, boardId);
 
         return commentRepository.save(comment);
     }
