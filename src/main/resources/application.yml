@@ -5,7 +5,8 @@ spring:
   application:
     name: til-service
   config:
-    import: optional:configserver:http://ec2-15-164-164-245.ap-northeast-2.compute.amazonaws.com:8888
+#    import: optional:configserver:http://ec2-15-164-164-245.ap-northeast-2.compute.amazonaws.com:8888
+    import: optional:configserver:http://localhost:8888
   cloud:
     config:
       name: secret
@@ -25,9 +26,10 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://ec2-15-164-164-245.ap-northeast-2.compute.amazonaws.com:8761
+#      defaultZone: http://ec2-15-164-164-245.ap-northeast-2.compute.amazonaws.com:8761/eureka
+      defaultZone: http://localhost:8761/eureka
 
       
 file:
-  profileDir: save-profile
+  codeDir: save-board-code
   boardDir: save-board-imgs
