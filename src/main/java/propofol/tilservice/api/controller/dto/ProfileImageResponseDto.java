@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ProfileImageResponseDto {
     private Long memberId;
-    private String profileBytes;
+    private String profileString;
     private String profileType;
 }

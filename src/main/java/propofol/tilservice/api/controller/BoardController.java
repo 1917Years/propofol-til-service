@@ -51,6 +51,24 @@ public class BoardController {
     }
 
     /**
+     * 추천 수 상위 글 조회
+     */
+    @GetMapping("/portfolio/myBoards")
+    @ResponseStatus(HttpStatus.OK)
+    public List<BoardResponseDto> getTopRecommendBoard(@Token String memberId) {
+        List<Board> boardByRecommend = boardService.findBoardByRecommend(memberId);
+        if(boardByRecommend.size() == 0)
+            return null;
+
+        List<BoardResponseDto> responseDtos = new ArrayList<>();
+        boardByRecommend.forEach(board -> {
+            responseDtos.add(modelMapper.map(board, BoardResponseDto.class));
+        });
+
+        return responseDtos;
+    }
+
+    /**
      * 게시글 추천수 처리
      */
     @PostMapping("/{boardId}/recommend")
@@ -281,7 +299,7 @@ public class BoardController {
 
         // 프로필
         ProfileImageResponseDto userProfile = userService.getUserProfile(token, userNickName);
-        responseDto.setProfileBytes(userProfile.getProfileBytes());
+        responseDto.setProfileBytes(userProfile.getProfileString());
         responseDto.setProfileType(userProfile.getProfileType());
 
         // 태그
@@ -308,7 +326,7 @@ public class BoardController {
                     comment.getNickname(), comment.getContent(), comment.getGroupId(), comment.getCreatedDate());
 
             ProfileImageResponseDto userProfile = userService.getUserProfile(token, comment.getNickname());
-            responseDto.setProfileBytes(userProfile.getProfileBytes());
+            responseDto.setProfileBytes(userProfile.getProfileString());
             responseDto.setProfileType(userProfile.getProfileType());
 
             commentPageResponseDto.getComments().add(responseDto);
@@ -376,7 +394,7 @@ public class BoardController {
             List<BoardTag> boardTags = board.getTags();
             boardTags.forEach(boardTag -> {
                 tags.forEach(tag -> {
-                    if(tag.getId() == boardTag.getTagId()){
+                    if(Objects.equals(tag.getId(), boardTag.getTagId())){
                         responseDto.getTagInfos().add(modelMapper.map(tag, TagResponseDto.class));
                     }
                 });
